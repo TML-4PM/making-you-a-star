@@ -258,9 +258,9 @@ const InterviewPrepTool = () => {
           <div className="text-center">
             <div className="mb-8 animate-fade-in">
               <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-                Interview Prep Tool
+                Make me a STAR
               </h1>
-              <p className="text-muted-foreground text-lg">Upload your CSV file to get started with your interview preparation</p>
+              <p className="text-muted-foreground text-lg">instant behavioural question helper - Upload a CSV file to get started with your interview preparation</p>
             </div>
             
             <div className="bg-card rounded-xl shadow-soft border-2 border-dashed border-border p-12 hover:border-primary/50 transition-all duration-300 animate-slide-up">
@@ -292,7 +292,7 @@ const InterviewPrepTool = () => {
         <div className="flex items-center justify-between animate-fade-in">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Interview Prep Tool
+              Make me a STAR
             </h1>
             <p className="text-muted-foreground mt-1 text-lg">
               {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
