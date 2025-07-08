@@ -1,7 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp, Eye, EyeOff, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Bookmark, BookmarkCheck, Upload } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Bookmark, BookmarkCheck, Upload, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ViewToggle } from "./ViewToggle";
+import { StoryPagination } from "./StoryPagination";
+import { TableView } from "./TableView";
+import { CompactCard } from "./CompactCard";
+import { ExpandedContent } from "./ExpandedContent";
 
 const InterviewPrepTool = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,6 +19,9 @@ const InterviewPrepTool = () => {
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [csvUploaded, setCsvUploaded] = useState(false);
+  const [currentView, setCurrentView] = useState<'cards' | 'compact' | 'table'>('cards');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -83,11 +91,19 @@ const InterviewPrepTool = () => {
   }, [data, searchTerm, selectedTheme, selectedOrg, selectedFraming, showOnlyPositive]);
 
   const displayedData = useMemo(() => {
+    let result = filteredData;
     if (showBookmarkedOnly) {
-      return filteredData.filter((_, index) => bookmarked.has(index));
+      result = filteredData.filter((_, index) => bookmarked.has(index));
     }
-    return filteredData;
+    return result;
   }, [filteredData, showBookmarkedOnly, bookmarked]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return displayedData.slice(startIndex, startIndex + itemsPerPage);
+  }, [displayedData, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(displayedData.length / itemsPerPage);
 
   const themes = [...new Set(data.map(item => item.Theme))];
   const organisations = [...new Set(data.map(item => item.Organisation))];
@@ -113,6 +129,10 @@ const InterviewPrepTool = () => {
 
   const getFramingBg = (framing: string) => {
     return framing === 'Positive' ? 'bg-success-light border-success/20' : 'bg-warning-light border-warning/20';
+  };
+
+  const collapseAll = () => {
+    setExpandedCard(null);
   };
 
   if (!csvUploaded) {
@@ -159,7 +179,7 @@ const InterviewPrepTool = () => {
               Interview Prep Tool
             </h1>
             <p className="text-muted-foreground mt-1 text-lg">
-              {data.length} stories loaded • {displayedData.length} showing
+              {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
             </p>
           </div>
           <Button
@@ -174,7 +194,7 @@ const InterviewPrepTool = () => {
           </Button>
         </div>
 
-        <div className="bg-card rounded-xl shadow-medium border p-6 space-y-4 animate-slide-up">
+        <div className="bg-card rounded-xl shadow-medium border p-6 space-y-4 animate-slide-up sticky top-4 z-10">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-64">
               <div className="relative">
@@ -223,121 +243,175 @@ const InterviewPrepTool = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() => setShowOnlyPositive(!showOnlyPositive)}
-              variant={showOnlyPositive ? "filter-active" : "filter"}
-              className="shadow-soft"
-            >
-              {showOnlyPositive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              Show Only Positive
-            </Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => setShowOnlyPositive(!showOnlyPositive)}
+                variant={showOnlyPositive ? "filter-active" : "filter"}
+                className="shadow-soft"
+              >
+                {showOnlyPositive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                Show Only Positive
+              </Button>
 
-            <Button
-              onClick={() => setShowBookmarkedOnly(!showBookmarkedOnly)}
-              variant={showBookmarkedOnly ? "bookmark-active" : "bookmark"}
-              className="shadow-soft"
-            >
-              {showBookmarkedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-              Show Bookmarked ({bookmarked.size})
-            </Button>
+              <Button
+                onClick={() => setShowBookmarkedOnly(!showBookmarkedOnly)}
+                variant={showBookmarkedOnly ? "bookmark-active" : "bookmark"}
+                className="shadow-soft"
+              >
+                {showBookmarkedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                Show Bookmarked ({bookmarked.size})
+              </Button>
+
+              {expandedCard !== null && (
+                <Button
+                  onClick={collapseAll}
+                  variant="outline"
+                  className="shadow-soft"
+                >
+                  <X className="w-4 h-4" />
+                  Collapse All
+                </Button>
+              )}
+            </div>
+
+            <ViewToggle currentView={currentView} onViewChange={setCurrentView} />
           </div>
         </div>
 
-        <div className="space-y-4">
-          {displayedData.map((item, index) => (
-            <div 
-              key={index} 
-              className={`bg-card rounded-xl shadow-medium border-2 transition-all duration-300 hover:shadow-large animate-fade-in ${getFramingBg(item.Framing)}`}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      {getThemeIcon(item.Theme)}
-                      <span className="font-semibold text-foreground">{item.Theme}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{item.Organisation}</span>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getFramingColor(item.Framing)}`}>
-                      {item.Framing === 'Positive' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                      {item.Framing}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => toggleBookmark(index)}
-                      variant={bookmarked.has(index) ? "bookmark-active" : "bookmark"}
-                      size="icon"
-                      className="shadow-soft"
-                    >
-                      {bookmarked.has(index) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                    </Button>
-                    
-                    <Button
-                      onClick={() => setExpandedCard(expandedCard === index ? null : index)}
-                      variant="outline"
-                      size="icon"
-                      className="shadow-soft"
-                    >
-                      {expandedCard === index ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-
-                {expandedCard === index && (
-                  <div className="mt-6 space-y-6 animate-fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-foreground flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-primary" />
-                          Situation
-                        </h4>
-                        <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Situation}</p>
+        {currentView === 'table' ? (
+          <TableView
+            data={paginatedData}
+            bookmarked={bookmarked}
+            onToggleBookmark={toggleBookmark}
+            getThemeIcon={getThemeIcon}
+            getFramingColor={getFramingColor}
+          />
+        ) : (
+          <div className="space-y-3">
+            {paginatedData.map((item, index) => {
+              const actualIndex = (currentPage - 1) * itemsPerPage + index;
+              
+              if (currentView === 'compact') {
+                return (
+                  <CompactCard
+                    key={actualIndex}
+                    item={item}
+                    index={actualIndex}
+                    isExpanded={expandedCard === actualIndex}
+                    isBookmarked={bookmarked.has(actualIndex)}
+                    onToggleExpanded={() => setExpandedCard(expandedCard === actualIndex ? null : actualIndex)}
+                    onToggleBookmark={() => toggleBookmark(actualIndex)}
+                    getThemeIcon={getThemeIcon}
+                    getFramingColor={getFramingColor}
+                    getFramingBg={getFramingBg}
+                  >
+                    <ExpandedContent item={item} />
+                  </CompactCard>
+                );
+              }
+              
+              return (
+                <div 
+                  key={actualIndex} 
+                  className={`bg-card rounded-xl shadow-medium border-2 transition-all duration-300 hover:shadow-large animate-fade-in ${getFramingBg(item.Framing)}`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          {getThemeIcon(item.Theme)}
+                          <span className="font-semibold text-foreground">{item.Theme}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">{item.Organisation}</span>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getFramingColor(item.Framing)}`}>
+                          {item.Framing === 'Positive' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                          {item.Framing}
+                        </div>
                       </div>
                       
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-foreground flex items-center gap-2">
-                          <Target className="w-4 h-4 text-primary" />
-                          Task
-                        </h4>
-                        <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Task}</p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => toggleBookmark(actualIndex)}
+                          variant={bookmarked.has(actualIndex) ? "bookmark-active" : "bookmark"}
+                          size="icon"
+                          className="shadow-soft"
+                        >
+                          {bookmarked.has(actualIndex) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                        </Button>
+                        
+                        <Button
+                          onClick={() => setExpandedCard(expandedCard === actualIndex ? null : actualIndex)}
+                          variant="outline"
+                          size="icon"
+                          className="shadow-soft"
+                        >
+                          {expandedCard === actualIndex ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </Button>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-foreground flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-primary" />
-                        Action
-                      </h4>
-                      <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Action}</p>
-                    </div>
+                    {expandedCard === actualIndex && (
+                      <div className="mt-6 space-y-6 animate-fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-foreground flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-primary" />
+                              Situation
+                            </h4>
+                            <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Situation}</p>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-foreground flex items-center gap-2">
+                              <Target className="w-4 h-4 text-primary" />
+                              Task
+                            </h4>
+                            <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Task}</p>
+                          </div>
+                        </div>
 
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-foreground flex items-center gap-2">
-                        <Award className="w-4 h-4 text-success" />
-                        Result
-                      </h4>
-                      <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Result}</p>
-                    </div>
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-foreground flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-primary" />
+                            Action
+                          </h4>
+                          <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Action}</p>
+                        </div>
 
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-foreground flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-warning" />
-                        Lesson
-                      </h4>
-                      <p className="text-muted-foreground leading-relaxed italic bg-accent-light p-4 rounded-lg border-l-4 border-accent">{item.Lesson}</p>
-                    </div>
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-foreground flex items-center gap-2">
+                            <Award className="w-4 h-4 text-success" />
+                            Result
+                          </h4>
+                          <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">{item.Result}</p>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-foreground flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-warning" />
+                            Lesson
+                          </h4>
+                          <p className="text-muted-foreground leading-relaxed italic bg-accent-light p-4 rounded-lg border-l-4 border-accent">{item.Lesson}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <StoryPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
 
         {displayedData.length === 0 && (
           <div className="text-center py-16 animate-fade-in">
@@ -350,6 +424,7 @@ const InterviewPrepTool = () => {
                 setSelectedFraming('');
                 setShowOnlyPositive(false);
                 setShowBookmarkedOnly(false);
+                setCurrentPage(1);
               }}
               className="shadow-medium"
             >
