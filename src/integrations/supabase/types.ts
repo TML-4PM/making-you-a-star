@@ -1274,6 +1274,51 @@ export type Database = {
         }
         Relationships: []
       }
+      interview_stories: {
+        Row: {
+          action: string
+          created_at: string
+          framing: string
+          id: string
+          lesson: string
+          organisation: string
+          result: string
+          situation: string
+          task: string
+          theme: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          framing: string
+          id?: string
+          lesson: string
+          organisation: string
+          result: string
+          situation: string
+          task: string
+          theme: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          framing?: string
+          id?: string
+          lesson?: string
+          organisation?: string
+          result?: string
+          situation?: string
+          task?: string
+          theme?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       leaderboards: {
         Row: {
           category: string
@@ -2269,6 +2314,42 @@ export type Database = {
         }
         Relationships: []
       }
+      question_pools: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          id: string
+          is_active: boolean
+          question_text: string
+          theme: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean
+          question_text: string
+          theme: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean
+          question_text?: string
+          theme?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_codes: {
         Row: {
           code: string
@@ -2578,6 +2659,35 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_bookmarks_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "interview_stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_certificates: {
         Row: {
@@ -3056,6 +3166,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_story_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          story_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note: string
+          story_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          story_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_story_notes_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "interview_stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_subscriptions: {
         Row: {

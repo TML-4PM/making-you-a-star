@@ -1,12 +1,26 @@
-import React, { useState, useMemo } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, EyeOff, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Bookmark, BookmarkCheck, Upload, X } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Bookmark, BookmarkCheck, Upload, X, Database, Save } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { ViewToggle } from "./ViewToggle";
 import { StoryPagination } from "./StoryPagination";
 import { TableView } from "./TableView";
 import { CompactCard } from "./CompactCard";
 import { ExpandedContent } from "./ExpandedContent";
+
+interface Story {
+  id?: string;
+  Organisation: string;
+  Theme: string;
+  Framing: string;
+  Situation: string;
+  Task: string;
+  Action: string;
+  Result: string;
+  Lesson: string;
+}
 
 const InterviewPrepTool = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,48 +31,138 @@ const InterviewPrepTool = () => {
   const [showOnlyPositive, setShowOnlyPositive] = useState(false);
   const [bookmarked, setBookmarked] = useState(new Set<number>());
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
-  const [data, setData] = useState<any[]>([]);
-  const [csvUploaded, setCsvUploaded] = useState(false);
+  const [data, setData] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'cards' | 'compact' | 'table'>('cards');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const itemsPerPage = 15;
+  const { toast } = useToast();
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Load data from database on component mount
+  useEffect(() => {
+    loadStoriesFromDatabase();
+  }, []);
+
+  const loadStoriesFromDatabase = async () => {
+    try {
+      setLoading(true);
+      const { data: stories, error } = await supabase
+        .from('interview_stories')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform database format to component format
+      const transformedStories = stories?.map(story => ({
+        id: story.id,
+        Organisation: story.organisation,
+        Theme: story.theme,
+        Framing: story.framing,
+        Situation: story.situation,
+        Task: story.task,
+        Action: story.action,
+        Result: story.result,
+        Lesson: story.lesson
+      })) || [];
+
+      setData(transformedStories);
+    } catch (error) {
+      console.error('Error loading stories:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load stories from database",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveToDatabase = async (stories: Story[]) => {
+    try {
+      // Transform component format to database format
+      const dbStories = stories.map(story => ({
+        organisation: story.Organisation,
+        theme: story.Theme,
+        framing: story.Framing,
+        situation: story.Situation,
+        task: story.Task,
+        action: story.Action,
+        result: story.Result,
+        lesson: story.Lesson
+      }));
+
+      const { error } = await supabase
+        .from('interview_stories')
+        .insert(dbStories);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${stories.length} stories saved to database`,
+      });
+
+      // Reload data from database
+      await loadStoriesFromDatabase();
+    } catch (error) {
+      console.error('Error saving to database:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save stories to database",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'text/csv') {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const csv = e.target?.result as string;
-        const lines = csv.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        
-        const parsedData = lines.slice(1).filter(line => line.trim()).map(line => {
-          const values: string[] = [];
-          let current = '';
-          let inQuotes = false;
+      reader.onload = async (e) => {
+        try {
+          const csv = e.target?.result as string;
+          const lines = csv.split('\n');
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
           
-          for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-              values.push(current.trim());
-              current = '';
-            } else {
-              current += char;
+          const parsedData = lines.slice(1).filter(line => line.trim()).map(line => {
+            const values: string[] = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+              const char = line[i];
+              if (char === '"') {
+                inQuotes = !inQuotes;
+              } else if (char === ',' && !inQuotes) {
+                values.push(current.trim());
+                current = '';
+              } else {
+                current += char;
+              }
             }
-          }
-          values.push(current.trim());
-          
-          const obj: any = {};
-          headers.forEach((header, index) => {
-            obj[header] = values[index] || '';
+            values.push(current.trim());
+            
+            const obj: any = {};
+            headers.forEach((header, index) => {
+              obj[header] = values[index] || '';
+            });
+            return obj;
           });
-          return obj;
-        });
-        
-        setData(parsedData);
-        setCsvUploaded(true);
+          
+          // Save to database instead of just setting state
+          await saveToDatabase(parsedData);
+          setShowUploadDialog(false);
+        } catch (error) {
+          console.error('Error processing CSV:', error);
+          toast({
+            title: "Error",
+            description: "Failed to process CSV file",
+            variant: "destructive"
+          });
+        }
       };
       reader.readAsText(file);
     }
@@ -135,7 +239,19 @@ const InterviewPrepTool = () => {
     setExpandedCard(null);
   };
 
-  if (!csvUploaded) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Database className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">Loading Stories</h2>
+          <p className="text-muted-foreground">Fetching your interview stories from the database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0 && !loading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto p-6">
@@ -182,16 +298,27 @@ const InterviewPrepTool = () => {
               {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setData([]);
-              setCsvUploaded(false);
-            }}
-            variant="outline"
-            className="shadow-soft"
-          >
-            Upload New CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowUploadDialog(true)}
+              variant="outline"
+              className="shadow-soft"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setData([]);
+                loadStoriesFromDatabase();
+              }}
+              variant="outline"
+              className="shadow-soft"
+            >
+              <Database className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="bg-card rounded-xl shadow-medium border p-6 space-y-4 animate-slide-up sticky top-4 z-10">
@@ -430,6 +557,55 @@ const InterviewPrepTool = () => {
             >
               Clear All Filters
             </Button>
+          </div>
+        )}
+
+        {/* Upload Dialog */}
+        {showUploadDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4 shadow-large">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">Import CSV File</h3>
+                <Button
+                  onClick={() => setShowUploadDialog(false)}
+                  variant="ghost"
+                  size="icon"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-card rounded-xl border-2 border-dashed border-border p-8 hover:border-primary/50 transition-all duration-300">
+                  <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <label className="cursor-pointer group block text-center">
+                    <span className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
+                      Click to upload CSV file
+                    </span>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium mb-2">Expected columns:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Organisation</li>
+                    <li>Theme</li>
+                    <li>Framing (Positive/Negative)</li>
+                    <li>Situation</li>
+                    <li>Task</li>
+                    <li>Action</li>
+                    <li>Result</li>
+                    <li>Lesson</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
