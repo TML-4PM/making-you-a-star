@@ -288,7 +288,7 @@ const InterviewPrepTool = () => {
             getFramingColor={getFramingColor}
           />
         ) : (
-          <div className="space-y-3">
+          <div className={currentView === 'compact' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3' : 'space-y-3'}>
             {paginatedData.map((item, index) => {
               const actualIndex = (currentPage - 1) * itemsPerPage + index;
               
