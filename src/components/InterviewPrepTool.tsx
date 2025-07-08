@@ -119,15 +119,108 @@ const InterviewPrepTool = () => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/csv') {
+    
+    // Reset file input
+    event.target.value = '';
+    
+    // File validation
+    if (!file) {
+      toast({
+        title: "No file selected",
+        description: "Please select a CSV file to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.type !== 'text/csv' && !file.name.toLowerCase().endsWith('.csv')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a CSV file (.csv extension required)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.size === 0) {
+      toast({
+        title: "Empty file",
+        description: "The selected file appears to be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      toast({
+        title: "File too large",
+        description: "Please upload a CSV file smaller than 10MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const startTime = Date.now();
+    
+    // Show initial loading toast
+    const loadingToast = toast({
+      title: "Processing CSV...",
+      description: "Reading and validating your file",
+    });
+
+    try {
       const reader = new FileReader();
+      
       reader.onload = async (e) => {
         try {
           const csv = e.target?.result as string;
-          const lines = csv.split('\n');
-          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
           
-          const parsedData = lines.slice(1).filter(line => line.trim()).map(line => {
+          if (!csv.trim()) {
+            toast({
+              title: "Empty CSV file",
+              description: "The CSV file contains no data",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          const lines = csv.split('\n').filter(line => line.trim());
+          
+          if (lines.length < 2) {
+            toast({
+              title: "Insufficient data",
+              description: "CSV file must contain headers and at least one data row",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          // Update loading message
+          toast({
+            title: "Validating CSV structure...",
+            description: `Found ${lines.length - 1} potential records`,
+          });
+
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          const requiredColumns = ['Organisation', 'Theme', 'Framing', 'Situation', 'Task', 'Action', 'Result', 'Lesson'];
+          const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+          
+          if (missingColumns.length > 0) {
+            toast({
+              title: "Missing required columns",
+              description: `Missing: ${missingColumns.join(', ')}. Please check your CSV format.`,
+              variant: "destructive"
+            });
+            return;
+          }
+
+          // Update loading message
+          toast({
+            title: "Processing records...",
+            description: "Parsing and validating data",
+          });
+          
+          const parsedData = lines.slice(1).map((line, index) => {
             const values: string[] = [];
             let current = '';
             let inQuotes = false;
@@ -137,34 +230,89 @@ const InterviewPrepTool = () => {
               if (char === '"') {
                 inQuotes = !inQuotes;
               } else if (char === ',' && !inQuotes) {
-                values.push(current.trim());
+                values.push(current.trim().replace(/^"|"$/g, ''));
                 current = '';
               } else {
                 current += char;
               }
             }
-            values.push(current.trim());
+            values.push(current.trim().replace(/^"|"$/g, ''));
             
             const obj: any = {};
             headers.forEach((header, index) => {
               obj[header] = values[index] || '';
             });
             return obj;
+          }).filter(row => {
+            // Filter out completely empty rows
+            return Object.values(row).some(value => value && value.toString().trim());
+          });
+
+          if (parsedData.length === 0) {
+            toast({
+              title: "No valid data found",
+              description: "All rows appear to be empty or invalid",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          // Validate data quality
+          const emptyRequiredFields = parsedData.filter(row => 
+            requiredColumns.some(col => !row[col] || !row[col].toString().trim())
+          ).length;
+
+          if (emptyRequiredFields > 0) {
+            toast({
+              title: "Data quality warning",
+              description: `${emptyRequiredFields} records have empty required fields but will still be imported`,
+            });
+          }
+
+          // Update loading message
+          toast({
+            title: "Saving to database...",
+            description: `Uploading ${parsedData.length} stories`,
           });
           
-          // Save to database instead of just setting state
+          // Save to database
           await saveToDatabase(parsedData);
+          
+          const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
+          
+          // Success toast with details
+          toast({
+            title: "✅ CSV uploaded successfully!",
+            description: `${parsedData.length} stories imported in ${processingTime}s. Data refreshed automatically.`,
+          });
+          
           setShowUploadDialog(false);
         } catch (error) {
           console.error('Error processing CSV:', error);
           toast({
-            title: "Error",
-            description: "Failed to process CSV file",
+            title: "Processing failed",
+            description: error instanceof Error ? error.message : "Failed to process CSV file",
             variant: "destructive"
           });
         }
       };
+
+      reader.onerror = () => {
+        toast({
+          title: "File read error",
+          description: "Failed to read the selected file",
+          variant: "destructive"
+        });
+      };
+
       reader.readAsText(file);
+    } catch (error) {
+      console.error('Error reading file:', error);
+      toast({
+        title: "Upload failed",
+        description: "An unexpected error occurred while uploading",
+        variant: "destructive"
+      });
     }
   };
 
