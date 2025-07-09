@@ -18,7 +18,7 @@ import NotFound from "./pages/NotFound";
 import { GroupsPage } from "./pages/GroupsPage";
 import JobDescriptionsPage from "./pages/JobDescriptionsPage";
 import JobAnalysisPage from "./pages/JobAnalysisPage";
-import InterviewPrepPage from "./pages/InterviewPrepPage";
+
 
 const queryClient = new QueryClient();
 
@@ -41,7 +41,7 @@ const App = () => (
                 <Route path="/bookmarks" element={<BookmarksPage />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/groups" element={<GroupsPage />} />
-                <Route path="/interview-prep" element={<InterviewPrepPage />} />
+                
                 <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
                 <Route path="/job-descriptions/:id" element={<JobAnalysisPage />} />
                 <Route path="*" element={<NotFound />} />
