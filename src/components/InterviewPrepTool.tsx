@@ -44,7 +44,7 @@ export function InterviewPrepTool() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
   const handleAnalyze = async () => {
-    if (!user || !formData.title || !formData.description) {
+    if (!formData.title || !formData.description) {
       toast({
         title: "Missing Information",
         description: "Please fill in the job title and description",
@@ -60,7 +60,7 @@ export function InterviewPrepTool() {
           title: formData.title,
           company: formData.company,
           description: formData.description,
-          userId: user.id
+          userId: user?.id || 'dev-user'
         }
       });
 
