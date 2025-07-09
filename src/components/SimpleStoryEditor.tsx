@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, ArrowRight, Save, X, Edit3, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, X, Edit3, Loader2, Plus, Undo2 } from 'lucide-react';
 
 interface Story {
   id: string;
@@ -23,6 +23,18 @@ interface Story {
   quality_score: number;
   star_rating: number;
   ai_suggestions: string[];
+}
+
+interface ParsedSuggestion {
+  text: string;
+  section: string;
+  originalIndex: number;
+}
+
+interface UndoAction {
+  field: keyof Story;
+  previousValue: string;
+  suggestionText: string;
 }
 
 interface SimpleStoryEditorProps {
@@ -47,8 +59,44 @@ export function SimpleStoryEditor({
   const [editedStory, setEditedStory] = useState<Partial<Story>>({});
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
+  const [parsedSuggestions, setParsedSuggestions] = useState<ParsedSuggestion[]>([]);
 
   const currentIndex = stories.findIndex(s => s.id === currentStoryId);
+
+  // Parse AI suggestions to determine which section they apply to
+  const parseAISuggestions = (suggestions: string[]): ParsedSuggestion[] => {
+    const sectionKeywords = {
+      situation: ['situation', 'context', 'background', 'setting', 'circumstances'],
+      task: ['task', 'challenge', 'objective', 'goal', 'problem', 'assignment'],
+      action: ['action', 'steps', 'approach', 'method', 'strategy', 'implementation'],
+      result: ['result', 'outcome', 'achievement', 'impact', 'success', 'conclusion'],
+      lesson: ['lesson', 'learning', 'insight', 'takeaway', 'reflection', 'growth'],
+      framing: ['framing', 'introduction', 'opening', 'positioning', 'context'],
+      theme: ['theme', 'title', 'focus', 'main point'],
+      organisation: ['organisation', 'company', 'team', 'department']
+    };
+
+    return suggestions.map((suggestion, index) => {
+      const lowerSuggestion = suggestion.toLowerCase();
+      let bestSection = 'general';
+      let maxMatches = 0;
+
+      Object.entries(sectionKeywords).forEach(([section, keywords]) => {
+        const matches = keywords.filter(keyword => lowerSuggestion.includes(keyword)).length;
+        if (matches > maxMatches) {
+          maxMatches = matches;
+          bestSection = section;
+        }
+      });
+
+      return {
+        text: suggestion,
+        section: bestSection,
+        originalIndex: index
+      };
+    });
+  };
 
   useEffect(() => {
     const story = stories.find(s => s.id === currentStoryId);
@@ -65,12 +113,68 @@ export function SimpleStoryEditor({
         framing: story.framing
       });
       setHasUnsavedChanges(false);
+      setUndoStack([]);
+      
+      // Parse AI suggestions when story changes
+      if (story.ai_suggestions && story.ai_suggestions.length > 0) {
+        setParsedSuggestions(parseAISuggestions(story.ai_suggestions));
+      } else {
+        setParsedSuggestions([]);
+      }
     }
   }, [currentStoryId, stories]);
 
   const handleFieldChange = (field: keyof Story, value: string) => {
     setEditedStory(prev => ({ ...prev, [field]: value }));
     setHasUnsavedChanges(true);
+  };
+
+  const applySuggestion = (suggestion: ParsedSuggestion) => {
+    const field = suggestion.section as keyof Story;
+    if (!field || !editedStory.hasOwnProperty(field)) return;
+
+    const currentValue = editedStory[field] as string || '';
+    const previousValue = currentValue;
+    
+    let newValue: string;
+    if (currentValue.trim() === '') {
+      // If section is empty, just insert the suggestion
+      newValue = suggestion.text;
+    } else {
+      // If section has content, append the suggestion intelligently
+      const needsSpace = !currentValue.endsWith('.') && !currentValue.endsWith('!') && !currentValue.endsWith('?');
+      const separator = needsSpace ? '. ' : ' ';
+      newValue = currentValue + separator + suggestion.text;
+    }
+
+    // Store undo action
+    setUndoStack(prev => [...prev, {
+      field,
+      previousValue,
+      suggestionText: suggestion.text
+    }]);
+
+    setEditedStory(prev => ({ ...prev, [field]: newValue }));
+    setHasUnsavedChanges(true);
+
+    toast({
+      title: "Suggestion Applied",
+      description: `Added suggestion to ${field} section`,
+    });
+  };
+
+  const undoLastAction = () => {
+    if (undoStack.length === 0) return;
+    
+    const lastAction = undoStack[undoStack.length - 1];
+    setEditedStory(prev => ({ ...prev, [lastAction.field]: lastAction.previousValue }));
+    setUndoStack(prev => prev.slice(0, -1));
+    setHasUnsavedChanges(true);
+
+    toast({
+      title: "Action Undone",
+      description: `Reverted changes to ${lastAction.field} section`,
+    });
   };
 
   const saveStory = async () => {
@@ -290,24 +394,63 @@ export function SimpleStoryEditor({
             </div>
           </div>
 
-          {/* AI Suggestions Hints */}
-          {currentStory.ai_suggestions && currentStory.ai_suggestions.length > 0 && (
+          {/* AI Suggestions with Apply Buttons */}
+          {parsedSuggestions.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">AI Suggestions (Optional Reference)</CardTitle>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  AI Suggestions - Click to Apply
+                  {undoStack.length > 0 && (
+                    <Button
+                      onClick={undoLastAction}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                    >
+                      <Undo2 className="w-3 h-3 mr-1" />
+                      Undo Last
+                    </Button>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted-foreground space-y-2">
-                  {currentStory.ai_suggestions.slice(0, 3).map((suggestion, index) => (
-                    <div key={index} className="p-2 bg-muted rounded text-xs">
-                      {suggestion}
+                <div className="space-y-3">
+                  {/* Group suggestions by section */}
+                  {Object.entries(
+                    parsedSuggestions.reduce((acc, suggestion) => {
+                      if (!acc[suggestion.section]) acc[suggestion.section] = [];
+                      acc[suggestion.section].push(suggestion);
+                      return acc;
+                    }, {} as Record<string, ParsedSuggestion[]>)
+                  ).map(([section, suggestions]) => (
+                    <div key={section} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs capitalize">
+                          {section === 'general' ? 'General' : section}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground">
+                          {suggestions.length} suggestion{suggestions.length > 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      
+                      {suggestions.map((suggestion, index) => (
+                        <div key={suggestion.originalIndex} className="flex items-start gap-2 p-2 bg-muted rounded">
+                          <div className="flex-1 text-xs leading-relaxed">
+                            {suggestion.text}
+                          </div>
+                          <Button
+                            onClick={() => applySuggestion(suggestion)}
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0 h-6 text-xs px-2"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Apply
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   ))}
-                  {currentStory.ai_suggestions.length > 3 && (
-                    <div className="text-xs text-muted-foreground">
-                      +{currentStory.ai_suggestions.length - 3} more suggestions available
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
