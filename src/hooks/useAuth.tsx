@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // In development mode, use a mock user
     if (import.meta.env.DEV) {
       const mockUser = {
-        id: 'dev-user-id',
+        id: '12345678-1234-5678-9abc-123456789012',
         email: 'dev@example.com',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
