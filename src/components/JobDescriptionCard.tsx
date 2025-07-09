@@ -72,7 +72,7 @@ export const JobDescriptionCard: React.FC<JobDescriptionCardProps> = ({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onAnalyze(jobDescription)}>
                 <Eye className="w-4 h-4 mr-2" />
-                View Analysis
+                View Details
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handleDelete}

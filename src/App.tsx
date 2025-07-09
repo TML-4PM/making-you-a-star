@@ -11,6 +11,7 @@ import UploadPage from "./pages/UploadPage";
 import NotFound from "./pages/NotFound";
 import { GroupsPage } from "./pages/GroupsPage";
 import { JobDescriptionsPage } from "./pages/JobDescriptionsPage";
+import { JobAnalysisPage } from "./pages/JobAnalysisPage";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/groups" element={<GroupsPage />} />
             <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
+            <Route path="/job-descriptions/:id" element={<JobAnalysisPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

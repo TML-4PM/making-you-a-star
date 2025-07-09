@@ -19,7 +19,7 @@ export const JobDescriptionsPage = () => {
   );
 
   const handleAnalyzeJD = (jd: any) => {
-    navigate(`/job-descriptions/${jd.id}`, { state: { jobDescription: jd } });
+    navigate(`/job-descriptions/${jd.id}`);
   };
 
   if (loading) {
