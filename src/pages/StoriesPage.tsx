@@ -761,6 +761,63 @@ function QuickSuggestions({ storyId, onApplied }: { storyId: string; onApplied: 
     }
   };
 
+  const applyAllSuggestions = async () => {
+    if (pendingSuggestions.length === 0) return;
+    
+    setApplying(true);
+    try {
+      const selectedIds = pendingSuggestions.map(s => s.id);
+      
+      // Group suggestions by section and apply changes
+      const sectionUpdates: Record<string, string> = {};
+      for (const suggestion of pendingSuggestions) {
+        sectionUpdates[suggestion.section] = suggestion.suggested_content;
+      }
+
+      // Update the story with new content
+      const { error: storyError } = await supabase.from('interview_stories')
+        .update({
+          ...sectionUpdates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storyId);
+
+      if (storyError) throw storyError;
+
+      // Mark suggestions as applied
+      for (const suggestionId of selectedIds) {
+        await supabase.from('story_suggestions')
+          .update({ status: 'applied' })
+          .eq('id', suggestionId);
+      }
+
+      // Trigger re-analysis
+      await supabase.functions.invoke('analyze-story', {
+        body: {
+          story: sectionUpdates,
+          storyId: storyId,
+          mode: 'analyze'
+        },
+      });
+
+      toast({
+        title: "All Suggestions Applied",
+        description: `${selectedIds.length} suggestions applied successfully`,
+      });
+
+      onApplied();
+    } catch (error) {
+      console.error('Error applying all suggestions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply all suggestions",
+        variant: "destructive"
+      });
+    } finally {
+      setApplying(false);
+    }
+  };
+
   if (loading || pendingSuggestions.length === 0) {
     return null;
   }
@@ -791,6 +848,28 @@ function QuickSuggestions({ storyId, onApplied }: { storyId: string; onApplied: 
         </div>
         
         <div className="flex items-center gap-2">
+          {pendingSuggestions.length > 0 && (
+            <Button
+              onClick={applyAllSuggestions}
+              disabled={applying}
+              size="sm"
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              {applying ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Accept All ({pendingSuggestions.length})
+                </>
+              )}
+            </Button>
+          )}
+          
           {highImpactSuggestions.length > 0 && (
             <Button
               onClick={applyHighImpactSuggestions}
