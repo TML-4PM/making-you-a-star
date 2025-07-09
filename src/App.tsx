@@ -9,6 +9,7 @@ import { AuthGuard } from "./components/auth/AuthGuard";
 import { AppNavigation } from "./components/AppNavigation";
 import StoriesPage from "./pages/StoriesPage";
 import StudyPage from "./pages/StudyPage";
+import PracticePage from "./pages/PracticePage";
 import BookmarksPage from "./pages/BookmarksPage";
 import UploadPage from "./pages/UploadPage";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<StoriesPage />} />
                 <Route path="/study" element={<StudyPage />} />
+                <Route path="/practice" element={<PracticePage />} />
                 <Route path="/bookmarks" element={<BookmarksPage />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/groups" element={<GroupsPage />} />
