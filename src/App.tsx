@@ -10,6 +10,7 @@ import BookmarksPage from "./pages/BookmarksPage";
 import UploadPage from "./pages/UploadPage";
 import NotFound from "./pages/NotFound";
 import { GroupsPage } from "./pages/GroupsPage";
+import { JobDescriptionsPage } from "./pages/JobDescriptionsPage";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/bookmarks" element={<BookmarksPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/groups" element={<GroupsPage />} />
+            <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

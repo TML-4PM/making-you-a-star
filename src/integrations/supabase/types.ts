@@ -942,6 +942,42 @@ export type Database = {
           },
         ]
       }
+      contact_submissions: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          interest_area: string
+          message: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          interest_area?: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          interest_area?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_analytics: {
         Row: {
           created_at: string | null
@@ -1316,6 +1352,90 @@ export type Database = {
           theme?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      jd_story_matches: {
+        Row: {
+          created_at: string
+          id: string
+          is_recommended: boolean | null
+          jd_id: string
+          match_reasons: Json | null
+          match_score: number | null
+          story_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_recommended?: boolean | null
+          jd_id: string
+          match_reasons?: Json | null
+          match_score?: number | null
+          story_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_recommended?: boolean | null
+          jd_id?: string
+          match_reasons?: Json | null
+          match_score?: number | null
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jd_story_matches_jd_id_fkey"
+            columns: ["jd_id"]
+            isOneToOne: false
+            referencedRelation: "job_descriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jd_story_matches_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "interview_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_descriptions: {
+        Row: {
+          company: string | null
+          created_at: string
+          description: string
+          extracted_keywords: Json | null
+          extracted_themes: Json | null
+          id: string
+          requirements_json: Json | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          description: string
+          extracted_keywords?: Json | null
+          extracted_themes?: Json | null
+          id?: string
+          requirements_json?: Json | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          description?: string
+          extracted_keywords?: Json | null
+          extracted_themes?: Json | null
+          id?: string
+          requirements_json?: Json | null
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
