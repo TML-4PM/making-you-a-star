@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles, FolderPlus, FileText, Filter, MessageSquare } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles, FolderPlus, FileText, Filter, MessageSquare, BarChart3 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,7 @@ import { AdvancedSearch } from "@/components/AdvancedSearch";
 import { StoryAnalytics } from "@/components/StoryAnalytics";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { QuestionSubmission } from "@/components/QuestionSubmission";
+import { StoryQualityDashboard } from "@/components/StoryQualityDashboard";
 
 interface Story {
   id?: string;
@@ -283,10 +284,14 @@ const StoriesPage = () => {
         </div>
 
         <Tabs defaultValue="browse" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="browse" className="flex items-center gap-2">
               <Database className="w-4 h-4" />
               Browse Stories
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Quality Dashboard
             </TabsTrigger>
             <TabsTrigger value="questions" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
@@ -547,6 +552,10 @@ const StoriesPage = () => {
             </Button>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            <StoryQualityDashboard />
           </TabsContent>
 
           <TabsContent value="questions" className="space-y-6">
