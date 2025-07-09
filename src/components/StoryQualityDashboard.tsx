@@ -88,7 +88,7 @@ export function StoryQualityDashboard() {
             confidence
           )
         `)
-        .eq('user_id', user?.id)
+        .or(`user_id.eq.${user?.id},user_id.is.null`)
         .order('quality_score', { ascending: false });
 
       if (error) throw error;
