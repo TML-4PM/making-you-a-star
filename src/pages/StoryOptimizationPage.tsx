@@ -53,22 +53,6 @@ interface Story {
   last_analyzed_at: string | null;
 }
 
-interface OptimizedStory {
-  situation: string;
-  task: string;
-  action: string;
-  result: string;
-  lesson: string;
-  improvements: {
-    situation: string[];
-    task: string[];
-    action: string[];
-    result: string[];
-    lesson: string[];
-  };
-  expected_quality_increase: number;
-  priority_focus: string[];
-}
 
 export default function StoryOptimizationPage() {
   const { id } = useParams<{ id: string }>();
@@ -77,13 +61,13 @@ export default function StoryOptimizationPage() {
   const { toast } = useToast();
   
   const [story, setStory] = useState<Story | null>(null);
-  const [optimizedStory, setOptimizedStory] = useState<OptimizedStory | null>(null);
+  
   const [allStories, setAllStories] = useState<Story[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'current' | 'suggestions' | 'optimized' | 'comparison'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'suggestions'>('current');
 
   useEffect(() => {
     loadAllStories();
@@ -149,7 +133,7 @@ export default function StoryOptimizationPage() {
     }
   };
 
-  const optimizeStory = async () => {
+  const generateSuggestions = async () => {
     if (!story) return;
     
     setOptimizing(true);
@@ -166,24 +150,23 @@ export default function StoryOptimizationPage() {
             lesson: story.lesson,
           },
           storyId: story.id,
-          mode: 'optimize'
+          mode: 'suggestions'
         },
       });
 
       if (error) throw error;
 
-      setOptimizedStory(data);
-      setActiveTab('optimized');
+      setActiveTab('suggestions');
       
       toast({
-        title: "Story Optimized!",
-        description: "AI has generated improvement suggestions",
+        title: "Suggestions Generated!",
+        description: "AI has created improvement recommendations for your story",
       });
     } catch (error) {
-      console.error('Optimization error:', error);
+      console.error('Suggestion generation error:', error);
       toast({
-        title: "Optimization Failed",
-        description: "Could not optimize story. Please try again.",
+        title: "Generation Failed",
+        description: "Could not generate suggestions. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -191,61 +174,6 @@ export default function StoryOptimizationPage() {
     }
   };
 
-  const applyOptimizations = async () => {
-    if (!story || !optimizedStory) return;
-    
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('interview_stories')
-        .update({
-          situation: optimizedStory.situation,
-          task: optimizedStory.task,
-          action: optimizedStory.action,
-          result: optimizedStory.result,
-          lesson: optimizedStory.lesson,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', story.id);
-
-      if (error) throw error;
-
-      // Re-analyze the optimized story
-      await supabase.functions.invoke('analyze-story', {
-        body: {
-          story: {
-            theme: story.theme,
-            organisation: story.organisation,
-            situation: optimizedStory.situation,
-            task: optimizedStory.task,
-            action: optimizedStory.action,
-            result: optimizedStory.result,
-            lesson: optimizedStory.lesson,
-          },
-          storyId: story.id,
-        },
-      });
-
-      toast({
-        title: "Story Updated!",
-        description: "Optimizations applied and story re-analyzed",
-      });
-
-      // Reload the story with new data
-      await loadAllStories();
-      setOptimizedStory(null);
-      setActiveTab('current');
-    } catch (error) {
-      console.error('Save error:', error);
-      toast({
-        title: "Save Failed",
-        description: "Could not save optimizations. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const navigateToStory = (index: number) => {
     if (index >= 0 && index < allStories.length) {
@@ -399,26 +327,16 @@ export default function StoryOptimizationPage() {
         </Card>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'current' | 'suggestions' | 'optimized' | 'comparison')} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'current' | 'suggestions')} className="w-full">
           <div className="flex items-center justify-between">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="current">Current Story</TabsTrigger>
-              <TabsTrigger value="suggestions">
-                Suggestions
-              </TabsTrigger>
-              <TabsTrigger value="optimized" disabled={!optimizedStory}>
-                Optimized
-                {optimizedStory && <Badge className="ml-2" variant="secondary">New</Badge>}
-              </TabsTrigger>
-              <TabsTrigger value="comparison" disabled={!optimizedStory}>Compare</TabsTrigger>
+              <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
             </TabsList>
             
             <div className="flex gap-2">
               <Button
-                onClick={() => {
-                  optimizeStory();
-                  setActiveTab('suggestions');
-                }}
+                onClick={generateSuggestions}
                 disabled={optimizing}
                 variant="default"
               >
@@ -444,21 +362,6 @@ export default function StoryOptimizationPage() {
                 setActiveTab('current');
               }}
             />
-          </TabsContent>
-
-          <TabsContent value="optimized" className="space-y-6">
-            {optimizedStory && (
-              <>
-                <OptimizedStoryDisplay optimizedStory={optimizedStory} title="Optimized Story" />
-                <ImprovementSuggestions improvements={optimizedStory.improvements} />
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="comparison" className="space-y-6">
-            {optimizedStory && (
-              <StoryComparison story={story} optimizedStory={optimizedStory} />
-            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -508,92 +411,5 @@ function StoryDisplay({ story, title }: { story: Story; title: string }) {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-// Component for displaying optimized story
-function OptimizedStoryDisplay({ optimizedStory, title }: { optimizedStory: OptimizedStory; title: string }) {
-  return (
-    <Card className="border-primary">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
-          {title}
-          <Badge className="ml-auto">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            +{optimizedStory.expected_quality_increase} Quality Points
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <h4 className="font-semibold text-foreground mb-2">Situation</h4>
-          <p className="text-muted-foreground">{optimizedStory.situation}</p>
-        </div>
-        <Separator />
-        <div>
-          <h4 className="font-semibold text-foreground mb-2">Task</h4>
-          <p className="text-muted-foreground">{optimizedStory.task}</p>
-        </div>
-        <Separator />
-        <div>
-          <h4 className="font-semibold text-foreground mb-2">Action</h4>
-          <p className="text-muted-foreground">{optimizedStory.action}</p>
-        </div>
-        <Separator />
-        <div>
-          <h4 className="font-semibold text-foreground mb-2">Result</h4>
-          <p className="text-muted-foreground">{optimizedStory.result}</p>
-        </div>
-        <Separator />
-        <div>
-          <h4 className="font-semibold text-foreground mb-2">Lesson</h4>
-          <p className="text-muted-foreground">{optimizedStory.lesson}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Component for improvement suggestions
-function ImprovementSuggestions({ improvements }: { improvements: OptimizedStory['improvements'] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lightbulb className="w-5 h-5" />
-          Improvement Suggestions
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {Object.entries(improvements).map(([section, suggestions]) => (
-            suggestions.length > 0 && (
-              <div key={section}>
-                <h4 className="font-semibold capitalize mb-2">{section}</h4>
-                <ul className="space-y-1">
-                  {suggestions.map((suggestion, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      {suggestion}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Component for side-by-side comparison
-function StoryComparison({ story, optimizedStory }: { story: Story; optimizedStory: OptimizedStory }) {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <StoryDisplay story={story} title="Current Story" />
-      <OptimizedStoryDisplay optimizedStory={optimizedStory} title="Optimized Version" />
-    </div>
   );
 }

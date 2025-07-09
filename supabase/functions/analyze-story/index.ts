@@ -24,14 +24,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { story, storyId, mode = 'analyze' } = await req.json();
+  const { story, storyId, mode = 'analyze' } = await req.json();
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    if (mode === 'optimize') {
+    if (mode === 'suggestions' || mode === 'optimize') {
       // Optimization mode: Generate granular suggestions for each section
       const optimizationPrompt = `
 You are an expert interview coach specializing in optimizing STAR format stories. Generate detailed, granular improvement suggestions for each section.
