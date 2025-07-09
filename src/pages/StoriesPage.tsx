@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles, FolderPlus } from 'lucide-react';
 import heroImage from '@/assets/hero-star-image.jpg';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -232,6 +232,14 @@ const StoriesPage = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={() => window.location.href = '/groups'}
+              variant="outline"
+              className="shadow-soft"
+            >
+              <FolderPlus className="w-4 h-4 mr-2" />
+              Manage Groups
+            </Button>
             <Button
               onClick={() => {
                 setData([]);

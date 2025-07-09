@@ -2586,6 +2586,75 @@ export type Database = {
         }
         Relationships: []
       }
+      story_group_items: {
+        Row: {
+          added_at: string
+          group_id: string
+          id: string
+          story_id: string
+        }
+        Insert: {
+          added_at?: string
+          group_id: string
+          id?: string
+          story_id: string
+        }
+        Update: {
+          added_at?: string
+          group_id?: string
+          id?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_group_items_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "story_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_group_items_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "interview_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           context: string | null

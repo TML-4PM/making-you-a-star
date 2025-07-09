@@ -1,11 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BookOpen, Upload, Heart, Home, GraduationCap } from 'lucide-react';
+import { BookOpen, Upload, Heart, Home, GraduationCap, FolderOpen } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 export const AppNavigation = () => {
   const navItems = [
     { path: '/', label: 'Stories', icon: Home },
+    { path: '/groups', label: 'Groups', icon: FolderOpen },
     { path: '/bookmarks', label: 'Bookmarks', icon: Heart },
     { path: '/study', label: 'Study', icon: GraduationCap },
     { path: '/upload', label: 'Upload', icon: Upload },

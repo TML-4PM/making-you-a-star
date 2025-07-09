@@ -9,6 +9,7 @@ import StudyPage from "./pages/StudyPage";
 import BookmarksPage from "./pages/BookmarksPage";
 import UploadPage from "./pages/UploadPage";
 import NotFound from "./pages/NotFound";
+import { GroupsPage } from "./pages/GroupsPage";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/study" element={<StudyPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
             <Route path="/upload" element={<UploadPage />} />
+            <Route path="/groups" element={<GroupsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
