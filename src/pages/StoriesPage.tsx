@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles, FolderPlus, FileText, Filter, MessageSquare, BarChart3 } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles, FolderPlus, FileText, Filter, MessageSquare, BarChart3, Brain, Loader2, TrendingUp, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import { StoryAnalytics } from "@/components/StoryAnalytics";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { QuestionSubmission } from "@/components/QuestionSubmission";
 import { StoryQualityDashboard } from "@/components/StoryQualityDashboard";
+import { useStorySuggestions } from "@/hooks/useStorySuggestions";
 
 interface Story {
   id?: string;
@@ -65,6 +66,7 @@ const StoriesPage = () => {
   const [currentView, setCurrentView] = useState<'cards' | 'compact' | 'table'>('cards');
   const [currentPage, setCurrentPage] = useState(1);
   const [useAdvancedSearch, setUseAdvancedSearch] = useState(false);
+  const [generatingSuggestions, setGeneratingSuggestions] = useState<Set<string>>(new Set());
   const itemsPerPage = 15;
   const { toast } = useToast();
   const { user } = useAuth();
@@ -272,6 +274,55 @@ const StoriesPage = () => {
     return framing === 'Positive' ? 'bg-success-light border-success/20' : 'bg-warning-light border-warning/20';
   };
 
+  const generateSuggestions = async (storyId: string) => {
+    if (!storyId) return;
+    
+    setGeneratingSuggestions(prev => new Set(prev).add(storyId));
+    try {
+      const story = data.find(s => s.id === storyId);
+      if (!story) return;
+
+      const { data: result, error } = await supabase.functions.invoke('analyze-story', {
+        body: {
+          story: {
+            theme: story.Theme,
+            organisation: story.Organisation,
+            situation: story.Situation,
+            task: story.Task,
+            action: story.Action,
+            result: story.Result,
+            lesson: story.Lesson,
+          },
+          storyId: storyId,
+          mode: 'suggestions'
+        },
+      });
+
+      if (error) throw error;
+      
+      // Trigger suggestions reload
+      window.dispatchEvent(new CustomEvent('suggestions-generated'));
+      
+      toast({
+        title: "Suggestions Generated!",
+        description: "AI has created improvement recommendations for your story",
+      });
+    } catch (error) {
+      console.error('Suggestion generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate suggestions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingSuggestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(storyId);
+        return newSet;
+      });
+    }
+  };
+
   const collapseAll = () => {
     setExpandedCard(null);
   };
@@ -463,23 +514,44 @@ const StoriesPage = () => {
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={() => handleToggleBookmark(index)}
-                          variant={item.id && bookmarks.has(item.id) ? "default" : "outline"}
-                          size="icon"
-                        >
-                          {item.id && bookmarks.has(item.id) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                        </Button>
-                        
-                        <Button
-                          onClick={() => setExpandedCard(expandedCard === actualIndex ? null : actualIndex)}
-                          variant="outline"
-                          size="icon"
-                        >
-                          {expandedCard === actualIndex ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </Button>
-                      </div>
+                       <div className="flex items-center gap-2">
+                         {item.id && (
+                           <Button
+                             onClick={() => generateSuggestions(item.id!)}
+                             disabled={generatingSuggestions.has(item.id)}
+                             variant="outline"
+                             size="sm"
+                           >
+                             {generatingSuggestions.has(item.id) ? (
+                               <>
+                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                 Generating...
+                               </>
+                             ) : (
+                               <>
+                                 <Brain className="w-4 h-4 mr-2" />
+                                 Suggestions
+                               </>
+                             )}
+                           </Button>
+                         )}
+                         
+                         <Button
+                           onClick={() => handleToggleBookmark(index)}
+                           variant={item.id && bookmarks.has(item.id) ? "default" : "outline"}
+                           size="icon"
+                         >
+                           {item.id && bookmarks.has(item.id) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                         </Button>
+                         
+                         <Button
+                           onClick={() => setExpandedCard(expandedCard === actualIndex ? null : actualIndex)}
+                           variant="outline"
+                           size="icon"
+                         >
+                           {expandedCard === actualIndex ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                         </Button>
+                       </div>
                     </div>
 
                     {expandedCard === actualIndex && (
@@ -526,35 +598,38 @@ const StoriesPage = () => {
                           <p className="text-muted-foreground leading-relaxed italic bg-accent-light p-4 rounded-lg border-l-4 border-accent">{item.Lesson}</p>
                         </div>
 
-                        {/* Story Analytics */}
-                        {item.id && (
-                          <StoryAnalytics 
-                            story={{
-                              id: item.id,
-                              theme: item.Theme,
-                              organisation: item.Organisation,
-                              situation: item.Situation,
-                              task: item.Task,
-                              action: item.Action,
-                              result: item.Result,
-                              lesson: item.Lesson,
-                              quality_score: item.quality_score || 0,
-                              completeness_score: item.completeness_score || 0,
-                              star_rating: item.star_rating || 0,
-                              situation_score: item.situation_score || 0,
-                              task_score: item.task_score || 0,
-                              action_score: item.action_score || 0,
-                              result_score: item.result_score || 0,
-                              lesson_score: item.lesson_score || 0,
-                              values_bonus: item.values_bonus || 0,
-                              total_star_score: item.total_star_score || 0,
-                              ai_suggestions: item.ai_suggestions || [],
-                              last_analyzed_at: item.last_analyzed_at || null,
-                              tags: []
-                            }}
-                            onUpdate={loadStoriesFromDatabase}
-                          />
-                        )}
+                         {/* Suggestions Section */}
+                         {item.id && <QuickSuggestions storyId={item.id} onApplied={loadStoriesFromDatabase} />}
+
+                         {/* Story Analytics */}
+                         {item.id && (
+                           <StoryAnalytics 
+                             story={{
+                               id: item.id,
+                               theme: item.Theme,
+                               organisation: item.Organisation,
+                               situation: item.Situation,
+                               task: item.Task,
+                               action: item.Action,
+                               result: item.Result,
+                               lesson: item.Lesson,
+                               quality_score: item.quality_score || 0,
+                               completeness_score: item.completeness_score || 0,
+                               star_rating: item.star_rating || 0,
+                               situation_score: item.situation_score || 0,
+                               task_score: item.task_score || 0,
+                               action_score: item.action_score || 0,
+                               result_score: item.result_score || 0,
+                               lesson_score: item.lesson_score || 0,
+                               values_bonus: item.values_bonus || 0,
+                               total_star_score: item.total_star_score || 0,
+                               ai_suggestions: item.ai_suggestions || [],
+                               last_analyzed_at: item.last_analyzed_at || null,
+                               tags: []
+                             }}
+                             onUpdate={loadStoriesFromDatabase}
+                           />
+                         )}
                       </div>
                     )}
                   </div>
@@ -606,5 +681,136 @@ const StoriesPage = () => {
     </div>
   );
 };
+
+// Quick Suggestions Component for inline display
+function QuickSuggestions({ storyId, onApplied }: { storyId: string; onApplied: () => void }) {
+  const { suggestions, loading } = useStorySuggestions(storyId);
+  const [applying, setApplying] = useState(false);
+  const { toast } = useToast();
+
+  const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
+  const highImpactSuggestions = pendingSuggestions.filter(s => s.impact_level === 'high');
+
+  const applyHighImpactSuggestions = async () => {
+    if (highImpactSuggestions.length === 0) return;
+    
+    setApplying(true);
+    try {
+      const selectedIds = highImpactSuggestions.map(s => s.id);
+      
+      // Group suggestions by section and apply changes
+      const sectionUpdates: Record<string, string> = {};
+      for (const suggestion of highImpactSuggestions) {
+        sectionUpdates[suggestion.section] = suggestion.suggested_content;
+      }
+
+      // Update the story with new content
+      const { error: storyError } = await supabase.from('interview_stories')
+        .update({
+          ...sectionUpdates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storyId);
+
+      if (storyError) throw storyError;
+
+      // Mark suggestions as applied
+      for (const suggestionId of selectedIds) {
+        await supabase.from('story_suggestions')
+          .update({ status: 'applied' })
+          .eq('id', suggestionId);
+      }
+
+      // Trigger re-analysis
+      await supabase.functions.invoke('analyze-story', {
+        body: {
+          story: sectionUpdates,
+          storyId: storyId,
+          mode: 'analyze'
+        },
+      });
+
+      toast({
+        title: "Suggestions Applied",
+        description: `${selectedIds.length} high-impact suggestions applied successfully`,
+      });
+
+      onApplied();
+    } catch (error) {
+      console.error('Error applying suggestions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply suggestions",
+        variant: "destructive"
+      });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  if (loading || pendingSuggestions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-primary" />
+            <span className="font-medium text-foreground">AI Suggestions Available</span>
+            <div className="flex items-center gap-1">
+              {highImpactSuggestions.length > 0 && (
+                <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded-full font-medium">
+                  {highImpactSuggestions.length} High Impact
+                </span>
+              )}
+              <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full">
+                {pendingSuggestions.length} Total
+              </span>
+            </div>
+          </div>
+          {highImpactSuggestions.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Apply high-impact suggestions to improve your story quality
+            </p>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {highImpactSuggestions.length > 0 && (
+            <Button
+              onClick={applyHighImpactSuggestions}
+              disabled={applying}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              {applying ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  Apply High Impact ({highImpactSuggestions.length})
+                </>
+              )}
+            </Button>
+          )}
+          
+          <Button
+            onClick={() => window.location.href = `/stories/${storyId}/optimize`}
+            variant="outline"
+            size="sm"
+          >
+            <Target className="w-4 h-4 mr-2" />
+            View All
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default StoriesPage;
