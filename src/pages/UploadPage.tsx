@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 
 interface Story {
   Organisation: string;
@@ -53,103 +54,92 @@ const UploadPage = () => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const isExcelFile = (file: File): boolean => {
+    const excelMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+    ];
+    const excelExtensions = ['.xlsx', '.xls'];
+    const fileName = file.name.toLowerCase();
     
-    event.target.value = '';
-    
-    if (!file) {
-      toast({
-        title: "No file selected",
-        description: "Please select a CSV file to upload",
-        variant: "destructive"
-      });
-      return;
-    }
+    return excelMimeTypes.includes(file.type) || 
+           excelExtensions.some(ext => fileName.endsWith(ext));
+  };
 
-    if (file.type !== 'text/csv' && !file.name.toLowerCase().endsWith('.csv')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a CSV file (.csv extension required)",
-        variant: "destructive"
-      });
-      return;
-    }
+  const isCsvFile = (file: File): boolean => {
+    return file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv');
+  };
 
-    if (file.size === 0) {
-      toast({
-        title: "Empty file",
-        description: "The selected file appears to be empty",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please upload a CSV file smaller than 10MB",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const startTime = Date.now();
-    
-    toast({
-      title: "Processing CSV...",
-      description: "Reading and validating your file",
-    });
-
-    try {
+  const processExcelFile = (file: File): Promise<Story[]> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
-      reader.onload = async (e) => {
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          if (jsonData.length < 2) {
+            throw new Error("Excel file must contain headers and at least one data row");
+          }
+          
+          const headers = jsonData[0] as string[];
+          const requiredColumns = ['Organisation', 'Theme', 'Framing', 'Situation', 'Task', 'Action', 'Result', 'Lesson'];
+          const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+          
+          if (missingColumns.length > 0) {
+            throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+          }
+          
+          const stories = jsonData.slice(1).map((row: any) => {
+            const story: any = {};
+            headers.forEach((header, index) => {
+              story[header] = row[index] || '';
+            });
+            return story;
+          }).filter(row => {
+            return Object.values(row).some(value => value && value.toString().trim());
+          });
+          
+          resolve(stories);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error("Failed to read Excel file"));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const processCsvFile = (file: File): Promise<Story[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
         try {
           const csv = e.target?.result as string;
           
           if (!csv.trim()) {
-            toast({
-              title: "Empty CSV file",
-              description: "The CSV file contains no data",
-              variant: "destructive"
-            });
-            return;
+            throw new Error("The CSV file contains no data");
           }
 
           const lines = csv.split('\n').filter(line => line.trim());
           
           if (lines.length < 2) {
-            toast({
-              title: "Insufficient data",
-              description: "CSV file must contain headers and at least one data row",
-              variant: "destructive"
-            });
-            return;
+            throw new Error("CSV file must contain headers and at least one data row");
           }
-
-          toast({
-            title: "Validating CSV structure...",
-            description: `Found ${lines.length - 1} potential records`,
-          });
 
           const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
           const requiredColumns = ['Organisation', 'Theme', 'Framing', 'Situation', 'Task', 'Action', 'Result', 'Lesson'];
           const missingColumns = requiredColumns.filter(col => !headers.includes(col));
           
           if (missingColumns.length > 0) {
-            toast({
-              title: "Missing required columns",
-              description: `Missing: ${missingColumns.join(', ')}. Please check your CSV format.`,
-              variant: "destructive"
-            });
-            return;
+            throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
           }
-
-          toast({
-            title: "Processing records...",
-            description: "Parsing and validating data",
-          });
           
           const parsedData = lines.slice(1).map((line, index) => {
             const values: string[] = [];
@@ -177,66 +167,119 @@ const UploadPage = () => {
           }).filter(row => {
             return Object.values(row).some(value => value && value.toString().trim());
           });
-
-          if (parsedData.length === 0) {
-            toast({
-              title: "No valid data found",
-              description: "All rows appear to be empty or invalid",
-              variant: "destructive"
-            });
-            return;
-          }
-
-          const emptyRequiredFields = parsedData.filter(row => 
-            requiredColumns.some(col => !row[col] || !row[col].toString().trim())
-          ).length;
-
-          if (emptyRequiredFields > 0) {
-            toast({
-              title: "Data quality warning",
-              description: `${emptyRequiredFields} records have empty required fields but will still be imported`,
-            });
-          }
-
-          toast({
-            title: "Saving to database...",
-            description: `Uploading ${parsedData.length} stories`,
-          });
           
-          await saveToDatabase(parsedData);
-          
-          const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
-          
-          toast({
-            title: "✅ CSV uploaded successfully!",
-            description: `${parsedData.length} stories imported in ${processingTime}s.`,
-          });
-          
-          setShowUploadDialog(false);
+          resolve(parsedData);
         } catch (error) {
-          console.error('Error processing CSV:', error);
-          toast({
-            title: "Processing failed",
-            description: error instanceof Error ? error.message : "Failed to process CSV file",
-            variant: "destructive"
-          });
+          reject(error);
         }
       };
+      
+      reader.onerror = () => reject(new Error("Failed to read CSV file"));
+      reader.readAsText(file);
+    });
+  };
 
-      reader.onerror = () => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    
+    event.target.value = '';
+    
+    if (!file) {
+      toast({
+        title: "No file selected",
+        description: "Please select a CSV or Excel file to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const isValidFile = isCsvFile(file) || isExcelFile(file);
+    
+    if (!isValidFile) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a CSV (.csv) or Excel (.xlsx, .xls) file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.size === 0) {
+      toast({
+        title: "Empty file",
+        description: "The selected file appears to be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload a file smaller than 10MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const startTime = Date.now();
+    const fileType = isExcelFile(file) ? "Excel" : "CSV";
+    
+    toast({
+      title: `Processing ${fileType} file...`,
+      description: "Reading and validating your file",
+    });
+
+    try {
+      let parsedData: Story[];
+      
+      if (isExcelFile(file)) {
+        parsedData = await processExcelFile(file);
+      } else {
+        parsedData = await processCsvFile(file);
+      }
+
+      if (parsedData.length === 0) {
         toast({
-          title: "File read error",
-          description: "Failed to read the selected file",
+          title: "No valid data found",
+          description: "All rows appear to be empty or invalid",
           variant: "destructive"
         });
-      };
+        return;
+      }
 
-      reader.readAsText(file);
-    } catch (error) {
-      console.error('Error reading file:', error);
+      const requiredColumns = ['Organisation', 'Theme', 'Framing', 'Situation', 'Task', 'Action', 'Result', 'Lesson'];
+      const emptyRequiredFields = parsedData.filter(row => 
+        requiredColumns.some(col => !row[col as keyof Story] || !row[col as keyof Story].toString().trim())
+      ).length;
+
+      if (emptyRequiredFields > 0) {
+        toast({
+          title: "Data quality warning",
+          description: `${emptyRequiredFields} records have empty required fields but will still be imported`,
+        });
+      }
+
       toast({
-        title: "Upload failed",
-        description: "An unexpected error occurred while uploading",
+        title: "Saving to database...",
+        description: `Uploading ${parsedData.length} stories`,
+      });
+      
+      await saveToDatabase(parsedData);
+      
+      const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      
+      toast({
+        title: `✅ ${fileType} uploaded successfully!`,
+        description: `${parsedData.length} stories imported in ${processingTime}s.`,
+      });
+      
+      setShowUploadDialog(false);
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast({
+        title: "Processing failed",
+        description: error instanceof Error ? error.message : "Failed to process file",
         variant: "destructive"
       });
     }
@@ -252,7 +295,7 @@ const UploadPage = () => {
               Upload Stories
             </h1>
             <p className="text-muted-foreground text-lg mb-8">
-              Import your interview stories from a CSV file
+              Import your interview stories from CSV or Excel files
             </p>
           </div>
 
@@ -262,11 +305,11 @@ const UploadPage = () => {
                 <Upload className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
                 <label className="cursor-pointer group block">
                   <span className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                    Click to upload CSV file
+                    Click to upload CSV or Excel file
                   </span>
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
@@ -326,7 +369,8 @@ const UploadPage = () => {
                 </div>
                 <ul className="space-y-2 text-muted-foreground">
                   <li>• First row must contain column headers</li>
-                  <li>• Use quotes for text containing commas</li>
+                  <li>• Supports CSV (.csv) and Excel (.xlsx, .xls) formats</li>
+                  <li>• Use quotes for text containing commas (CSV only)</li>
                   <li>• Framing must be "Positive" or "Negative"</li>
                   <li>• Empty rows will be skipped</li>
                   <li>• Stories are saved to your account</li>
@@ -336,13 +380,16 @@ const UploadPage = () => {
             </div>
 
             <div className="bg-muted/30 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">CSV Format Example</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">File Format Example</h3>
               <div className="bg-card rounded-lg p-4 overflow-x-auto">
                 <code className="text-sm text-muted-foreground whitespace-nowrap">
                   Organisation,Theme,Framing,Situation,Task,Action,Result,Lesson<br/>
                   "Tech Corp","Leading Change","Positive","We needed to...","My task was...","I took action by...","The result was...","I learned that..."
                 </code>
               </div>
+              <p className="text-sm text-muted-foreground mt-3">
+                Excel files should follow the same column structure as CSV format above.
+              </p>
             </div>
 
             <div className="flex justify-center">
