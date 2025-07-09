@@ -191,8 +191,17 @@ export default function StoryOptimizationPage() {
   };
 
   const applyOptimizations = async () => {
-    if (!story || !optimizedStory) return;
+    if (!story || !optimizedStory) {
+      console.error('Apply failed: missing story or optimizedStory', { story: !!story, optimizedStory: !!optimizedStory });
+      toast({
+        title: "Apply Failed",
+        description: "No optimized story to apply. Please optimize first.",
+        variant: "destructive",
+      });
+      return;
+    }
     
+    console.log('Applying optimizations:', optimizedStory);
     setSaving(true);
     try {
       const { error } = await supabase
@@ -207,7 +216,10 @@ export default function StoryOptimizationPage() {
         })
         .eq('id', story.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
 
       // Re-analyze the optimized story
       await supabase.functions.invoke('analyze-story', {

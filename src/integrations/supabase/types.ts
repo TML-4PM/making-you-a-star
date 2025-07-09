@@ -2967,6 +2967,100 @@ export type Database = {
         }
         Relationships: []
       }
+      story_suggestion_applications: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          id: string
+          new_content: string | null
+          previous_content: string | null
+          quality_impact: number | null
+          suggestion_id: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          id?: string
+          new_content?: string | null
+          previous_content?: string | null
+          quality_impact?: number | null
+          suggestion_id: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          id?: string
+          new_content?: string | null
+          previous_content?: string | null
+          quality_impact?: number | null
+          suggestion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_suggestion_applications_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "story_suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_suggestions: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          expected_improvement: number | null
+          id: string
+          impact_level: string
+          original_content: string | null
+          section: string
+          status: string
+          story_id: string
+          suggested_content: string | null
+          suggestion_text: string
+          suggestion_type: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          expected_improvement?: number | null
+          id?: string
+          impact_level?: string
+          original_content?: string | null
+          section: string
+          status?: string
+          story_id: string
+          suggested_content?: string | null
+          suggestion_text: string
+          suggestion_type: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          expected_improvement?: number | null
+          id?: string
+          impact_level?: string
+          original_content?: string | null
+          section?: string
+          status?: string
+          story_id?: string
+          suggested_content?: string | null
+          suggestion_text?: string
+          suggestion_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_suggestions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "interview_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       story_tags: {
         Row: {
           confidence: number | null
