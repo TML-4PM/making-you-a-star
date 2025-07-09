@@ -58,33 +58,62 @@ export const useJobDescriptions = () => {
     description: string;
   }) => {
     try {
-      // Extract basic keywords and themes
-      const { keywords, themes, requirements } = await analyzeJobDescription(jdData.description);
-      
+      // Create JD first with basic data
       const { data, error } = await supabase
         .from('job_descriptions')
         .insert([{
           ...jdData,
           user_id: (await supabase.auth.getUser()).data.user?.id,
-          extracted_keywords: keywords,
-          extracted_themes: themes,
-          requirements_json: requirements
+          extracted_keywords: [],
+          extracted_themes: [],
+          requirements_json: []
         }])
         .select()
         .single();
 
       if (error) throw error;
 
+      // Get user's stories for AI matching
+      const { data: stories } = await supabase
+        .from('interview_stories')
+        .select('*');
+
+      // Use AI for enhanced analysis
+      const analysisResponse = await fetch('https://pflisxkcxbzbioxwidywf.supabase.co/functions/v1/analyze-job-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          description: jdData.description,
+          jdId: data.id,
+          stories: stories || []
+        }),
+      });
+
+      const { analysis } = await analysisResponse.json();
+
+      // Update JD with AI analysis
+      await supabase
+        .from('job_descriptions')
+        .update({
+          extracted_keywords: analysis.keywords,
+          extracted_themes: analysis.themes,
+          requirements_json: analysis.requirements
+        })
+        .eq('id', data.id);
+
       toast({
         title: "Success",
-        description: "Job description created and analyzed successfully"
+        description: `Job description analyzed with AI - found ${analysis.themes.length} themes and ${(stories || []).length} story matches`
       });
 
       await loadJobDescriptions();
     } catch (error) {
       console.error('Error creating job description:', error);
       toast({
-        title: "Error",
+        title: "Error", 
         description: "Failed to create job description",
         variant: "destructive"
       });
