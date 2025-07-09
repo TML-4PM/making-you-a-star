@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles } from 'lucide-react';
+import heroImage from '@/assets/hero-star-image.jpg';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -162,12 +163,73 @@ const StoriesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-primary">
+        <div className="absolute inset-0">
+          <img 
+            src={heroImage} 
+            alt="STAR Method Interview Preparation" 
+            className="w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary/60"></div>
+        </div>
+        <div className="relative max-w-6xl mx-auto px-6 py-20">
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center gap-3">
+              <Star className="w-12 h-12 text-white animate-pulse" />
+              <Sparkles className="w-8 h-8 text-white/80" />
+              <Star className="w-10 h-10 text-white/90" />
+            </div>
+          </div>
+          <div className="text-center text-white space-y-6">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
+              Make me a <span className="bg-white/20 px-4 py-2 rounded-lg">STAR</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+              Master the STAR method with your interview stories. Situation, Task, Action, Result - 
+              practice and perfect your responses for interview success.
+            </p>
+            <div className="flex justify-center gap-4 pt-4">
+              <div className="flex items-center gap-2 text-white/80">
+                <Clock className="w-5 h-5" />
+                <span>Structured Practice</span>
+              </div>
+              <div className="flex items-center gap-2 text-white/80">
+                <Target className="w-5 h-5" />
+                <span>Focused Learning</span>
+              </div>
+              <div className="flex items-center gap-2 text-white/80">
+                <Award className="w-5 h-5" />
+                <span>Interview Success</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Floating Stars */}
+        <div className="absolute top-10 left-10 animate-bounce">
+          <Star className="w-6 h-6 text-white/40" />
+        </div>
+        <div className="absolute top-20 right-20 animate-pulse">
+          <Star className="w-4 h-4 text-white/30" />
+        </div>
+        <div className="absolute bottom-20 left-20 animate-bounce delay-500">
+          <Star className="w-5 h-5 text-white/50" />
+        </div>
+        <div className="absolute bottom-10 right-10 animate-pulse delay-700">
+          <Star className="w-7 h-7 text-white/40" />
+        </div>
+      </div>
+
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between animate-fade-in">
-          <div>
-            <p className="text-muted-foreground mt-1 text-lg">
-              {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
-            </p>
+          <div className="flex items-center gap-3">
+            <Star className="w-5 h-5 text-primary animate-pulse" />
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Your Interview Stories</h2>
+              <p className="text-muted-foreground mt-1">
+                {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
