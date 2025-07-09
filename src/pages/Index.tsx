@@ -1,4 +1,4 @@
-import InterviewPrepTool from "@/components/InterviewPrepTool";
+import { InterviewPrepTool } from "@/components/InterviewPrepTool";
 
 const Index = () => {
   return <InterviewPrepTool />;

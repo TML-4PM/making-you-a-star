@@ -1670,42 +1670,60 @@ export type Database = {
       }
       omani_delegation: {
         Row: {
+          business_plan_overview: Json | null
+          contact_preferences: Json | null
           created_at: string
           delegation_year: number | null
           email: string | null
+          follow_up_timeline: Json | null
           full_name: string
           id: string
           interests: string | null
+          investment_opportunities: Json | null
           job_title: string | null
+          meeting_schedule: Json | null
           organization: string | null
           phone: string | null
           sector: string | null
+          strategic_information: Json | null
           updated_at: string
         }
         Insert: {
+          business_plan_overview?: Json | null
+          contact_preferences?: Json | null
           created_at?: string
           delegation_year?: number | null
           email?: string | null
+          follow_up_timeline?: Json | null
           full_name: string
           id?: string
           interests?: string | null
+          investment_opportunities?: Json | null
           job_title?: string | null
+          meeting_schedule?: Json | null
           organization?: string | null
           phone?: string | null
           sector?: string | null
+          strategic_information?: Json | null
           updated_at?: string
         }
         Update: {
+          business_plan_overview?: Json | null
+          contact_preferences?: Json | null
           created_at?: string
           delegation_year?: number | null
           email?: string | null
+          follow_up_timeline?: Json | null
           full_name?: string
           id?: string
           interests?: string | null
+          investment_opportunities?: Json | null
           job_title?: string | null
+          meeting_schedule?: Json | null
           organization?: string | null
           phone?: string | null
           sector?: string | null
+          strategic_information?: Json | null
           updated_at?: string
         }
         Relationships: []
