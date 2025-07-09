@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { SuggestionManager } from '@/components/SuggestionManager';
+import { BulkApplyEditor } from '@/components/BulkApplyEditor';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -67,7 +68,7 @@ export default function StoryOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'current' | 'suggestions'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'suggestions' | 'editor'>('current');
 
   useEffect(() => {
     loadAllStories();
@@ -331,11 +332,12 @@ export default function StoryOptimizationPage() {
         </Card>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'current' | 'suggestions')} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'current' | 'suggestions' | 'editor')} className="w-full">
           <div className="flex items-center justify-between">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsList className="grid w-full max-w-lg grid-cols-3">
               <TabsTrigger value="current">Current Story</TabsTrigger>
-              <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
+              <TabsTrigger value="editor">Bulk Apply & Edit</TabsTrigger>
+              <TabsTrigger value="suggestions">Individual Suggestions</TabsTrigger>
             </TabsList>
             
             <div className="flex gap-2">
@@ -356,6 +358,19 @@ export default function StoryOptimizationPage() {
 
           <TabsContent value="current" className="space-y-6">
             <StoryDisplay story={story} title="Current Story" />
+          </TabsContent>
+
+          <TabsContent value="editor" className="space-y-6">
+            <BulkApplyEditor 
+              story={story} 
+              onStoryUpdated={() => {
+                loadAllStories();
+                toast({
+                  title: "Story Updated",
+                  description: "Your changes have been saved successfully",
+                });
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="suggestions" className="space-y-6">
