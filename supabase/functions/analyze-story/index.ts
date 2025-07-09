@@ -24,14 +24,106 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { story, storyId } = await req.json();
+    const { story, storyId, mode = 'analyze' } = await req.json();
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Analyze story with OpenAI using Enhanced STAR+L+V Model
+    if (mode === 'optimize') {
+      // Optimization mode: Generate enhanced version of the story
+      const optimizationPrompt = `
+You are an expert interview coach specializing in optimizing STAR format stories. Your task is to enhance this story to maximize its impact, quality score, and interview effectiveness.
+
+**Current Story:**
+Theme: ${story.theme}
+Organisation: ${story.organisation}
+Situation: ${story.situation}
+Task: ${story.task}
+Action: ${story.action}
+Result: ${story.result}
+Lesson: ${story.lesson}
+
+**Optimization Guidelines:**
+1. **Situation**: Add senior-level context, business stakes, complexity
+2. **Task**: Clarify leadership role, strategic ownership, scale of responsibility
+3. **Action**: Emphasize leadership behaviors, cross-functional collaboration, strategic thinking
+4. **Result**: Quantify impact with metrics, business value, long-term effects
+5. **Lesson**: Show growth mindset, scalable insights, leadership evolution
+
+**Enhancement Focus:**
+- Add specific metrics and quantified results
+- Include leadership and strategic elements
+- Strengthen business impact and stakeholder value
+- Improve storytelling flow and engagement
+- Demonstrate senior-level competencies
+
+Provide response in this exact JSON format:
+{
+  "situation": "Enhanced situation with more context and stakes",
+  "task": "Clarified task with leadership ownership",
+  "action": "Strengthened actions with leadership focus",
+  "result": "Quantified results with business impact",
+  "lesson": "Deeper lesson with growth mindset",
+  "improvements": {
+    "situation": ["specific improvement 1", "specific improvement 2"],
+    "task": ["specific improvement 1", "specific improvement 2"],
+    "action": ["specific improvement 1", "specific improvement 2"],
+    "result": ["specific improvement 1", "specific improvement 2"],
+    "lesson": ["specific improvement 1", "specific improvement 2"]
+  },
+  "expected_quality_increase": 8,
+  "priority_focus": ["Leadership Impact", "Quantified Results", "Strategic Thinking"]
+}
+`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert interview coach specializing in STAR story optimization. Always respond with valid JSON only.'
+            },
+            {
+              role: 'user',
+              content: optimizationPrompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 1500,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const aiResponse = await response.json();
+      const optimizationText = aiResponse.choices[0]?.message?.content;
+
+      if (!optimizationText) {
+        throw new Error('No optimization received from OpenAI');
+      }
+
+      try {
+        const optimization = JSON.parse(optimizationText);
+        return new Response(JSON.stringify(optimization), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (parseError) {
+        console.error('Failed to parse optimization response:', optimizationText);
+        throw new Error('Invalid optimization response format');
+      }
+    }
+
+    // Standard analysis mode: Analyze story with OpenAI using Enhanced STAR+L+V Model
     const analysisPrompt = `
 Analyze this interview story using the Extended STAR + L + V Model with 5-point scoring per element:
 

@@ -332,6 +332,18 @@ const StoriesPage = () => {
               </div>
               <div className="flex gap-2">
                 <Button
+                  onClick={() => {
+                    if (data.length > 0) {
+                      window.location.href = `/stories/${data[0].id}/optimize`;
+                    }
+                  }}
+                  variant="default"
+                  disabled={data.length === 0}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Optimize Stories
+                </Button>
+                <Button
                   onClick={() => setUseAdvancedSearch(!useAdvancedSearch)}
                   variant={useAdvancedSearch ? "default" : "outline"}
                 >
