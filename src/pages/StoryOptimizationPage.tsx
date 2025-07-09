@@ -84,6 +84,24 @@ export default function StoryOptimizationPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'current' | 'optimized' | 'comparison'>('current');
 
+  // Load optimized story from session storage on mount
+  useEffect(() => {
+    if (id) {
+      const savedOptimized = sessionStorage.getItem(`optimized_story_${id}`);
+      if (savedOptimized) {
+        try {
+          const parsed = JSON.parse(savedOptimized);
+          console.log('Restored optimized story from storage:', parsed);
+          setOptimizedStory(parsed);
+          setActiveTab('optimized');
+        } catch (e) {
+          console.warn('Failed to parse saved optimized story:', e);
+          sessionStorage.removeItem(`optimized_story_${id}`);
+        }
+      }
+    }
+  }, [id]);
+
   useEffect(() => {
     loadAllStories();
   }, [user]);
@@ -94,6 +112,7 @@ export default function StoryOptimizationPage() {
       if (index !== -1) {
         setCurrentIndex(index);
         setStory(allStories[index]);
+        console.log('Story loaded:', allStories[index]);
       }
     }
   }, [id, allStories]);
@@ -171,7 +190,13 @@ export default function StoryOptimizationPage() {
 
       if (error) throw error;
 
+      console.log('Optimization successful:', data);
       setOptimizedStory(data);
+      
+      // Save to session storage for persistence
+      sessionStorage.setItem(`optimized_story_${story.id}`, JSON.stringify(data));
+      console.log('Saved optimized story to storage');
+      
       setActiveTab('optimized');
       
       toast({
@@ -241,6 +266,10 @@ export default function StoryOptimizationPage() {
         title: "Story Updated!",
         description: "Optimizations applied and story re-analyzed",
       });
+
+      // Clear the stored optimization data since it's been applied
+      sessionStorage.removeItem(`optimized_story_${story.id}`);
+      console.log('Cleared optimized story from storage');
 
       // Reload the story with new data
       await loadAllStories();
