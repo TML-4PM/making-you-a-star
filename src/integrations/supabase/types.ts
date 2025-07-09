@@ -2148,6 +2148,99 @@ export type Database = {
           },
         ]
       }
+      practice_items: {
+        Row: {
+          confidence_level: number | null
+          created_at: string
+          difficulty_rating: number | null
+          id: string
+          is_correct: boolean | null
+          question_text: string | null
+          session_id: string
+          story_id: string | null
+          time_spent_seconds: number | null
+          user_response: string | null
+        }
+        Insert: {
+          confidence_level?: number | null
+          created_at?: string
+          difficulty_rating?: number | null
+          id?: string
+          is_correct?: boolean | null
+          question_text?: string | null
+          session_id: string
+          story_id?: string | null
+          time_spent_seconds?: number | null
+          user_response?: string | null
+        }
+        Update: {
+          confidence_level?: number | null
+          created_at?: string
+          difficulty_rating?: number | null
+          id?: string
+          is_correct?: boolean | null
+          question_text?: string | null
+          session_id?: string
+          story_id?: string | null
+          time_spent_seconds?: number | null
+          user_response?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "practice_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_items_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "interview_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_sessions: {
+        Row: {
+          completed_at: string | null
+          correct_items: number | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          metadata: Json | null
+          session_type: string
+          started_at: string
+          total_items: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          correct_items?: number | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          metadata?: Json | null
+          session_type: string
+          started_at?: string
+          total_items?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          correct_items?: number | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          metadata?: Json | null
+          session_type?: string
+          started_at?: string
+          total_items?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       predator_encounters: {
         Row: {
           animal_id: string
@@ -2846,6 +2939,48 @@ export type Database = {
           points?: number | null
           unlocked_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_analytics: {
+        Row: {
+          average_confidence: number | null
+          created_at: string
+          id: string
+          last_practice_at: string | null
+          readiness_score: number | null
+          strong_themes: Json | null
+          total_practice_time_minutes: number | null
+          total_sessions: number | null
+          updated_at: string
+          user_id: string
+          weak_themes: Json | null
+        }
+        Insert: {
+          average_confidence?: number | null
+          created_at?: string
+          id?: string
+          last_practice_at?: string | null
+          readiness_score?: number | null
+          strong_themes?: Json | null
+          total_practice_time_minutes?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+          user_id: string
+          weak_themes?: Json | null
+        }
+        Update: {
+          average_confidence?: number | null
+          created_at?: string
+          id?: string
+          last_practice_at?: string | null
+          readiness_score?: number | null
+          strong_themes?: Json | null
+          total_practice_time_minutes?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+          user_id?: string
+          weak_themes?: Json | null
         }
         Relationships: []
       }
@@ -3574,6 +3709,10 @@ export type Database = {
           points: number
         }
         Returns: undefined
+      }
+      calculate_readiness_score: {
+        Args: { target_user_id: string }
+        Returns: number
       }
       calculate_viral_score: {
         Args: {
