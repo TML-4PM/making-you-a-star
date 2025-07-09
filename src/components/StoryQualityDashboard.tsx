@@ -59,12 +59,29 @@ export function StoryQualityDashboard() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ processed: 0, total: 0 });
+  const [functionStatus, setFunctionStatus] = useState<'unknown' | 'available' | 'unavailable'>('unknown');
 
   useEffect(() => {
     if (user) {
       loadDashboardData();
+      checkFunctionHealth();
     }
   }, [user]);
+
+  const checkFunctionHealth = async () => {
+    try {
+      // Try to invoke the function with minimal data to test availability
+      const { error } = await supabase.functions.invoke('bulk-analyze-stories', {
+        body: { userId: 'health-check', batchSize: 0 },
+      });
+      
+      // If we get any response (even an error), the function is reachable
+      setFunctionStatus('available');
+    } catch (error) {
+      console.log('Function health check failed:', error);
+      setFunctionStatus('unavailable');
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -234,21 +251,45 @@ export function StoryQualityDashboard() {
       const total = unanalyzedCount;
       setBulkProgress({ processed, total });
 
+      console.log('Starting bulk analysis for user:', user.id, 'Total stories to analyze:', total);
+
       while (processed < total) {
-        const { data, error } = await supabase.functions.invoke('bulk-analyze-stories', {
-          body: {
-            userId: user.id,
-            batchSize: Math.min(batchSize, total - processed)
-          },
-        });
+        console.log(`Processing batch: ${processed}/${total}`);
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('bulk-analyze-stories', {
+            body: {
+              userId: user.id,
+              batchSize: Math.min(batchSize, total - processed)
+            },
+          });
 
-        if (error) throw error;
+          if (error) {
+            console.error('Supabase function error:', error);
+            throw new Error(`Function call failed: ${error.message || 'Unknown error'}`);
+          }
 
-        processed += data.processed || 0;
-        setBulkProgress({ processed, total });
+          if (!data) {
+            throw new Error('No data returned from function');
+          }
 
-        // Brief pause to avoid overwhelming the API
-        await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log('Batch analysis result:', data);
+          processed += data.processed || 0;
+          setBulkProgress({ processed, total });
+
+          // Brief pause to avoid overwhelming the API
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (batchError) {
+          console.error('Batch processing error:', batchError);
+          
+          // Check if it's a function deployment issue
+          if (batchError.message?.includes('Failed to send a request to the Edge Function') || 
+              batchError.message?.includes('Failed to fetch')) {
+            throw new Error('The analysis service is not available. Please ensure the edge function is deployed and configured properly.');
+          }
+          
+          throw batchError;
+        }
       }
 
       toast({
@@ -260,9 +301,20 @@ export function StoryQualityDashboard() {
       await loadDashboardData();
     } catch (error) {
       console.error('Bulk analysis error:', error);
+      
+      let errorMessage = "Failed to complete bulk analysis.";
+      
+      if (error.message?.includes('analysis service is not available')) {
+        errorMessage = "Analysis service is currently unavailable. Please contact support if this persists.";
+      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
+        errorMessage = "Network connection issue. Please check your internet connection and try again.";
+      } else if (error.message?.includes('OpenAI')) {
+        errorMessage = "AI analysis service configuration issue. Please contact support.";
+      }
+      
       toast({
         title: "Analysis Failed",
-        description: "Failed to complete bulk analysis. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -316,24 +368,48 @@ export function StoryQualityDashboard() {
             Analyze your stories and track improvement opportunities
           </p>
         </div>
-        <Button 
-          onClick={runBulkAnalysis}
-          disabled={analyzing}
-          size="lg"
-          className="flex items-center gap-2"
-        >
-          {analyzing ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Analyzing... ({bulkProgress.processed}/{bulkProgress.total})
-            </>
-          ) : (
-            <>
-              <Zap className="w-5 h-5" />
-              Run Bulk Analysis ({stats.totalStories - stats.analyzedStories} remaining)
-            </>
+        <div className="flex items-center gap-3">
+          {functionStatus === 'unavailable' && (
+            <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg border border-yellow-200">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-sm">Analysis service unavailable</span>
+            </div>
           )}
-        </Button>
+          <Button 
+            onClick={runBulkAnalysis}
+            disabled={analyzing || functionStatus === 'unavailable'}
+            size="lg"
+            className="flex items-center gap-2"
+            variant={functionStatus === 'unavailable' ? 'outline' : 'default'}
+          >
+            {analyzing ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Analyzing... ({bulkProgress.processed}/{bulkProgress.total})
+              </>
+            ) : functionStatus === 'unavailable' ? (
+              <>
+                <AlertCircle className="w-5 h-5" />
+                Service Unavailable
+              </>
+            ) : (
+              <>
+                <Zap className="w-5 h-5" />
+                Run Bulk Analysis ({stats.totalStories - stats.analyzedStories} remaining)
+              </>
+            )}
+          </Button>
+          {functionStatus === 'unavailable' && (
+            <Button 
+              onClick={checkFunctionHealth}
+              variant="outline"
+              size="sm"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Overview Stats */}
