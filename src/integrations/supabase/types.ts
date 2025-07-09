@@ -1313,6 +1313,7 @@ export type Database = {
       interview_stories: {
         Row: {
           action: string
+          action_score: number | null
           ai_suggestions: Json | null
           completeness_score: number | null
           created_at: string
@@ -1320,19 +1321,26 @@ export type Database = {
           id: string
           last_analyzed_at: string | null
           lesson: string
+          lesson_score: number | null
           organisation: string
           quality_score: number | null
           result: string
+          result_score: number | null
           search_vector: unknown | null
           situation: string
+          situation_score: number | null
           star_rating: number | null
           task: string
+          task_score: number | null
           theme: string
+          total_star_score: number | null
           updated_at: string
           user_id: string | null
+          values_bonus: number | null
         }
         Insert: {
           action: string
+          action_score?: number | null
           ai_suggestions?: Json | null
           completeness_score?: number | null
           created_at?: string
@@ -1340,19 +1348,26 @@ export type Database = {
           id?: string
           last_analyzed_at?: string | null
           lesson: string
+          lesson_score?: number | null
           organisation: string
           quality_score?: number | null
           result: string
+          result_score?: number | null
           search_vector?: unknown | null
           situation: string
+          situation_score?: number | null
           star_rating?: number | null
           task: string
+          task_score?: number | null
           theme: string
+          total_star_score?: number | null
           updated_at?: string
           user_id?: string | null
+          values_bonus?: number | null
         }
         Update: {
           action?: string
+          action_score?: number | null
           ai_suggestions?: Json | null
           completeness_score?: number | null
           created_at?: string
@@ -1360,16 +1375,22 @@ export type Database = {
           id?: string
           last_analyzed_at?: string | null
           lesson?: string
+          lesson_score?: number | null
           organisation?: string
           quality_score?: number | null
           result?: string
+          result_score?: number | null
           search_vector?: unknown | null
           situation?: string
+          situation_score?: number | null
           star_rating?: number | null
           task?: string
+          task_score?: number | null
           theme?: string
+          total_star_score?: number | null
           updated_at?: string
           user_id?: string | null
+          values_bonus?: number | null
         }
         Relationships: []
       }

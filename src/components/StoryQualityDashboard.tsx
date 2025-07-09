@@ -33,6 +33,13 @@ interface StoryMetrics {
   star_rating: number;
   ai_suggestions: string[];
   last_analyzed_at: string | null;
+  situation_score: number;
+  task_score: number;
+  action_score: number;
+  result_score: number;
+  lesson_score: number;
+  values_bonus: number;
+  total_star_score: number;
   tags: Array<{
     tag: string;
     tag_type: string;
@@ -46,6 +53,14 @@ interface DashboardStats {
   avgQuality: number;
   avgCompleteness: number;
   avgStarRating: number;
+  avgStarBreakdown: {
+    situation: number;
+    task: number;
+    action: number;
+    result: number;
+    lesson: number;
+    valuesBonus: number;
+  };
   commonSuggestions: Array<{ suggestion: string; count: number }>;
   tagsByType: Record<string, Array<{ tag: string; count: number }>>;
   themeDistribution: Array<{ theme: string; count: number; avgQuality: number }>;
@@ -104,6 +119,13 @@ export function StoryQualityDashboard() {
           star_rating,
           ai_suggestions,
           last_analyzed_at,
+          situation_score,
+          task_score,
+          action_score,
+          result_score,
+          lesson_score,
+          values_bonus,
+          total_star_score,
           story_tags (
             tag,
             tag_type,
@@ -129,6 +151,13 @@ export function StoryQualityDashboard() {
             quality_score: story.quality_score || 0,
             completeness_score: story.completeness_score || 0,
             star_rating: story.star_rating || 0,
+            situation_score: story.situation_score || 0,
+            task_score: story.task_score || 0,
+            action_score: story.action_score || 0,
+            result_score: story.result_score || 0,
+            lesson_score: story.lesson_score || 0,
+            values_bonus: story.values_bonus || 0,
+            total_star_score: story.total_star_score || 0,
             ai_suggestions: Array.isArray(story.ai_suggestions) 
               ? story.ai_suggestions.map(String).filter(Boolean)
               : [],
@@ -167,6 +196,14 @@ export function StoryQualityDashboard() {
           avgQuality: 0,
           avgCompleteness: 0,
           avgStarRating: 0,
+          avgStarBreakdown: {
+            situation: 0,
+            task: 0,
+            action: 0,
+            result: 0,
+            lesson: 0,
+            valuesBonus: 0
+          },
           commonSuggestions: [],
           tagsByType: {},
           themeDistribution: [],
@@ -190,6 +227,23 @@ export function StoryQualityDashboard() {
       const avgStarRating = analyzedStories.length > 0
         ? analyzedStories.reduce((sum, s) => sum + (s.star_rating || 0), 0) / analyzedStories.length
         : 0;
+
+      // Calculate average STAR breakdown
+      const avgStarBreakdown = analyzedStories.length > 0 ? {
+        situation: analyzedStories.reduce((sum, s) => sum + (s.situation_score || 0), 0) / analyzedStories.length,
+        task: analyzedStories.reduce((sum, s) => sum + (s.task_score || 0), 0) / analyzedStories.length,
+        action: analyzedStories.reduce((sum, s) => sum + (s.action_score || 0), 0) / analyzedStories.length,
+        result: analyzedStories.reduce((sum, s) => sum + (s.result_score || 0), 0) / analyzedStories.length,
+        lesson: analyzedStories.reduce((sum, s) => sum + (s.lesson_score || 0), 0) / analyzedStories.length,
+        valuesBonus: analyzedStories.reduce((sum, s) => sum + (s.values_bonus || 0), 0) / analyzedStories.length
+      } : {
+        situation: 0,
+        task: 0,
+        action: 0,
+        result: 0,
+        lesson: 0,
+        valuesBonus: 0
+      };
 
     // Common suggestions
     const suggestionCounts: Record<string, number> = {};
@@ -267,6 +321,7 @@ export function StoryQualityDashboard() {
       avgQuality,
       avgCompleteness,
       avgStarRating,
+      avgStarBreakdown,
       commonSuggestions,
       tagsByType: formattedTagsByType,
       themeDistribution,
@@ -280,6 +335,14 @@ export function StoryQualityDashboard() {
         avgQuality: 0,
         avgCompleteness: 0,
         avgStarRating: 0,
+        avgStarBreakdown: {
+          situation: 0,
+          task: 0,
+          action: 0,
+          result: 0,
+          lesson: 0,
+          valuesBonus: 0
+        },
         commonSuggestions: [],
         tagsByType: {},
         themeDistribution: [],
@@ -541,6 +604,62 @@ export function StoryQualityDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* STAR Breakdown Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>STAR+L Component Analysis</CardTitle>
+          <CardDescription>
+            Average scores across all analyzed stories (5-point scale)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${getQualityColor(stats.avgStarBreakdown.situation * 20)}`}>
+                {stats.avgStarBreakdown.situation.toFixed(1)}
+              </div>
+              <div className="text-sm text-muted-foreground">Situation</div>
+              <Progress value={stats.avgStarBreakdown.situation * 20} className="mt-1 h-2" />
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${getQualityColor(stats.avgStarBreakdown.task * 20)}`}>
+                {stats.avgStarBreakdown.task.toFixed(1)}
+              </div>
+              <div className="text-sm text-muted-foreground">Task</div>
+              <Progress value={stats.avgStarBreakdown.task * 20} className="mt-1 h-2" />
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${getQualityColor(stats.avgStarBreakdown.action * 20)}`}>
+                {stats.avgStarBreakdown.action.toFixed(1)}
+              </div>
+              <div className="text-sm text-muted-foreground">Action</div>
+              <Progress value={stats.avgStarBreakdown.action * 20} className="mt-1 h-2" />
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${getQualityColor(stats.avgStarBreakdown.result * 20)}`}>
+                {stats.avgStarBreakdown.result.toFixed(1)}
+              </div>
+              <div className="text-sm text-muted-foreground">Result</div>
+              <Progress value={stats.avgStarBreakdown.result * 20} className="mt-1 h-2" />
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${getQualityColor(stats.avgStarBreakdown.lesson * 20)}`}>
+                {stats.avgStarBreakdown.lesson.toFixed(1)}
+              </div>
+              <div className="text-sm text-muted-foreground">Lesson</div>
+              <Progress value={stats.avgStarBreakdown.lesson * 20} className="mt-1 h-2" />
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {stats.avgStarBreakdown.valuesBonus.toFixed(1)}
+              </div>
+              <div className="text-sm text-muted-foreground">Values Bonus</div>
+              <Progress value={(stats.avgStarBreakdown.valuesBonus / 3) * 100} className="mt-1 h-2" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Detailed Analysis */}
       <Tabs defaultValue="themes" className="w-full">

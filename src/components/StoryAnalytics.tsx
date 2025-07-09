@@ -32,6 +32,13 @@ interface StoryWithMetrics {
   star_rating: number;
   ai_suggestions: string[];
   last_analyzed_at: string | null;
+  situation_score: number;
+  task_score: number;
+  action_score: number;
+  result_score: number;
+  lesson_score: number;
+  values_bonus: number;
+  total_star_score: number;
   tags: Array<{
     tag: string;
     tag_type: string;
@@ -158,7 +165,78 @@ export function StoryAnalytics({ story, onUpdate }: StoryAnalyticsProps) {
         </Button>
       </div>
 
-      {/* Quality Metrics */}
+      {/* STAR Detailed Scoring */}
+      <div className="space-y-4">
+        <h4 className="font-medium mb-3 flex items-center gap-2">
+          <Target className="h-4 w-4" />
+          STAR+L Breakdown ({story.total_star_score}/25 + {story.values_bonus} bonus)
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Situation</span>
+              <span className={`text-sm font-bold ${getQualityColor(story.situation_score * 20)}`}>
+                {story.situation_score}/5
+              </span>
+            </div>
+            <Progress value={story.situation_score * 20} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Task</span>
+              <span className={`text-sm font-bold ${getQualityColor(story.task_score * 20)}`}>
+                {story.task_score}/5
+              </span>
+            </div>
+            <Progress value={story.task_score * 20} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Action</span>
+              <span className={`text-sm font-bold ${getQualityColor(story.action_score * 20)}`}>
+                {story.action_score}/5
+              </span>
+            </div>
+            <Progress value={story.action_score * 20} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Result</span>
+              <span className={`text-sm font-bold ${getQualityColor(story.result_score * 20)}`}>
+                {story.result_score}/5
+              </span>
+            </div>
+            <Progress value={story.result_score * 20} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Lesson</span>
+              <span className={`text-sm font-bold ${getQualityColor(story.lesson_score * 20)}`}>
+                {story.lesson_score}/5
+              </span>
+            </div>
+            <Progress value={story.lesson_score * 20} className="h-2" />
+          </div>
+        </div>
+
+        {story.values_bonus > 0 && (
+          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                Values Alignment Bonus: +{story.values_bonus} points
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Overall Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">

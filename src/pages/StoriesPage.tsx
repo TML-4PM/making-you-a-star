@@ -30,6 +30,13 @@ interface Story {
   quality_score?: number;
   completeness_score?: number;
   star_rating?: number;
+  situation_score?: number;
+  task_score?: number;
+  action_score?: number;
+  result_score?: number;
+  lesson_score?: number;
+  values_bonus?: number;
+  total_star_score?: number;
   ai_suggestions?: string[];
   last_analyzed_at?: string;
 }
@@ -99,6 +106,13 @@ const StoriesPage = () => {
         quality_score: story.quality_score || 0,
         completeness_score: story.completeness_score || 0,
         star_rating: story.star_rating || 0,
+        situation_score: story.situation_score || 0,
+        task_score: story.task_score || 0,
+        action_score: story.action_score || 0,
+        result_score: story.result_score || 0,
+        lesson_score: story.lesson_score || 0,
+        values_bonus: story.values_bonus || 0,
+        total_star_score: story.total_star_score || 0,
         ai_suggestions: Array.isArray(story.ai_suggestions) ? story.ai_suggestions.map(String) : [],
         last_analyzed_at: story.last_analyzed_at
       })) || [];
@@ -175,6 +189,13 @@ const StoriesPage = () => {
         quality_score: story.quality_score || 0,
         completeness_score: story.completeness_score || 0,
         star_rating: story.star_rating || 0,
+        situation_score: story.situation_score || 0,
+        task_score: story.task_score || 0,
+        action_score: story.action_score || 0,
+        result_score: story.result_score || 0,
+        lesson_score: story.lesson_score || 0,
+        values_bonus: story.values_bonus || 0,
+        total_star_score: story.total_star_score || 0,
         ai_suggestions: Array.isArray(story.ai_suggestions) ? story.ai_suggestions.map(String) : [],
         last_analyzed_at: story.last_analyzed_at
       })) || [];
@@ -508,6 +529,13 @@ const StoriesPage = () => {
                               quality_score: item.quality_score || 0,
                               completeness_score: item.completeness_score || 0,
                               star_rating: item.star_rating || 0,
+                              situation_score: item.situation_score || 0,
+                              task_score: item.task_score || 0,
+                              action_score: item.action_score || 0,
+                              result_score: item.result_score || 0,
+                              lesson_score: item.lesson_score || 0,
+                              values_bonus: item.values_bonus || 0,
+                              total_star_score: item.total_star_score || 0,
                               ai_suggestions: item.ai_suggestions || [],
                               last_analyzed_at: item.last_analyzed_at || null,
                               tags: []

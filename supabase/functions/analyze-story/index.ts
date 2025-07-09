@@ -31,9 +31,9 @@ Deno.serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Analyze story with OpenAI
+    // Analyze story with OpenAI using Enhanced STAR+L+V Model
     const analysisPrompt = `
-Analyze this interview story and provide structured feedback:
+Analyze this interview story using the Extended STAR + L + V Model with 5-point scoring per element:
 
 **Story Details:**
 Theme: ${story.theme}
@@ -44,29 +44,51 @@ Action: ${story.action}
 Result: ${story.result}
 Lesson: ${story.lesson}
 
+**Scoring Criteria (5 points each):**
+- **Situation (0-5)**: Relevant context, senior stakes, clear setup, complexity level
+- **Task (0-5)**: Defined role/responsibility, clarity of challenge, ownership demonstration
+- **Action (0-5)**: Leadership, ownership, cross-functional delivery, strategic thinking
+- **Result (0-5)**: Quantified/strategic outcome, business value, measurable impact
+- **Lesson (0-5)**: Self-awareness, evolution, scalable reflection, growth mindset
+
+**Values Alignment Bonus (0-3):**
+- Trust: Transparency, credibility, governance
+- Customer Success: Prioritizing customer outcomes
+- Innovation: Challenging status quo, bold thinking
+- Equality: Inclusive leadership, diverse perspectives
+- Sustainability/Ethics: Responsible innovation
+- Ohana: Supporting, mentoring, uplifting others
+
 Please provide analysis in this exact JSON format:
 {
+  "situationScore": 4,
+  "taskScore": 3,
+  "actionScore": 5,
+  "resultScore": 4,
+  "lessonScore": 3,
+  "valuesBonus": 2,
+  "totalStarScore": 21,
+  "qualityScore": 85,
+  "completenessScore": 90,
+  "starRating": 4,
   "tags": [
     {"tag": "leadership", "type": "skill", "confidence": 0.9},
     {"tag": "problem-solving", "type": "competency", "confidence": 0.8}
   ],
-  "qualityScore": 85,
-  "completenessScore": 90,
-  "starRating": 4,
   "suggestions": [
     "Add more specific metrics to quantify the result",
     "Include timeline details for better context"
-  ]
+  ],
+  "starBreakdown": {
+    "situation": "Strong context but could include more senior-level stakes",
+    "task": "Clear responsibility but challenge complexity could be better defined",
+    "action": "Excellent leadership and cross-functional delivery demonstrated",
+    "result": "Good quantified outcome, business value is clear",
+    "lesson": "Shows self-awareness but could be more scalable"
+  }
 }
 
-**Scoring Criteria:**
-- qualityScore (0-100): Overall story quality, clarity, impact
-- completenessScore (0-100): How complete the STAR format is
-- starRating (1-5): Interview readiness rating
-- tags: Extract 3-8 relevant skills, competencies, industries, or experience levels
-- suggestions: 2-4 specific improvement recommendations
-
-Focus on business skills, leadership competencies, and technical abilities.
+Focus on senior-level competencies, leadership skills, and business impact.
 `;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -111,13 +133,27 @@ Focus on business skills, leadership competencies, and technical abilities.
       console.error('Failed to parse AI response:', analysisText);
       // Fallback analysis if parsing fails
       analysis = {
+        situationScore: 3,
+        taskScore: 3,
+        actionScore: 3,
+        resultScore: 2,
+        lessonScore: 2,
+        valuesBonus: 1,
+        totalStarScore: 14,
         tags: [
           { tag: story.theme.toLowerCase(), type: 'skill', confidence: 0.8 }
         ],
         qualityScore: 70,
         completenessScore: story.situation && story.task && story.action && story.result ? 85 : 60,
         starRating: 3,
-        suggestions: ['Consider adding more specific details and measurable outcomes']
+        suggestions: ['Consider adding more specific details and measurable outcomes'],
+        starBreakdown: {
+          situation: 'Basic context provided',
+          task: 'Role defined but could be clearer',
+          action: 'Actions described but need more leadership focus',
+          result: 'Results mentioned but need quantification',
+          lesson: 'Limited reflection on growth and learning'
+        }
       };
     }
 
@@ -138,6 +174,13 @@ Focus on business skills, leadership competencies, and technical abilities.
         'apikey': supabaseKey,
       },
       body: JSON.stringify({
+        situation_score: analysis.situationScore || 0,
+        task_score: analysis.taskScore || 0,
+        action_score: analysis.actionScore || 0,
+        result_score: analysis.resultScore || 0,
+        lesson_score: analysis.lessonScore || 0,
+        values_bonus: analysis.valuesBonus || 0,
+        total_star_score: analysis.totalStarScore || 0,
         quality_score: analysis.qualityScore,
         completeness_score: analysis.completenessScore,
         star_rating: analysis.starRating,
