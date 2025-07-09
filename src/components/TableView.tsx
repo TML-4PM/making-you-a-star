@@ -12,7 +12,7 @@ import {
 
 interface TableViewProps {
   data: any[];
-  bookmarked: Set<number>;
+  bookmarked: Set<string>;
   onToggleBookmark: (index: number) => void;
   getThemeIcon: (theme: string) => React.ReactNode;
   getFramingColor: (framing: string) => string;
@@ -63,19 +63,19 @@ export const TableView: React.FC<TableViewProps> = ({
                   {item.Situation}
                 </p>
               </TableCell>
-              <TableCell>
-                <Button
-                  onClick={() => onToggleBookmark(index)}
-                  variant={bookmarked.has(index) ? "bookmark-active" : "bookmark"}
-                  size="icon"
-                  className="h-8 w-8"
-                >
-                  {bookmarked.has(index) ? 
-                    <BookmarkCheck className="w-3 h-3" /> : 
-                    <Bookmark className="w-3 h-3" />
-                  }
-                </Button>
-              </TableCell>
+               <TableCell>
+                 <Button
+                   onClick={() => onToggleBookmark(index)}
+                   variant={item.id && bookmarked.has(item.id) ? "bookmark-active" : "bookmark"}
+                   size="icon"
+                   className="h-8 w-8"
+                 >
+                   {item.id && bookmarked.has(item.id) ? 
+                     <BookmarkCheck className="w-3 h-3" /> : 
+                     <Bookmark className="w-3 h-3" />
+                   }
+                 </Button>
+               </TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, EyeOff, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Bookmark, BookmarkCheck, Upload, X, Database, Save } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Bookmark, BookmarkCheck, Upload, X, Database, Save, BookOpen } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,9 @@ import { StoryPagination } from "./StoryPagination";
 import { TableView } from "./TableView";
 import { CompactCard } from "./CompactCard";
 import { ExpandedContent } from "./ExpandedContent";
+import { FlashcardSet } from "./FlashcardSet";
+import { useBookmarks } from "@/hooks/useBookmarks";
+import { generateFlashcards } from "@/utils/flashcardGenerator";
 
 interface Story {
   id?: string;
@@ -29,8 +32,8 @@ const InterviewPrepTool = () => {
   const [selectedFraming, setSelectedFraming] = useState('');
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [showOnlyPositive, setShowOnlyPositive] = useState(false);
-  const [bookmarked, setBookmarked] = useState(new Set<number>());
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
+  const [showFlashcards, setShowFlashcards] = useState(false);
   const [data, setData] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'cards' | 'compact' | 'table'>('cards');
@@ -38,6 +41,7 @@ const InterviewPrepTool = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const itemsPerPage = 15;
   const { toast } = useToast();
+  const { bookmarks, loading: bookmarksLoading, toggleBookmark } = useBookmarks();
 
   // Load data from database on component mount
   useEffect(() => {
@@ -316,14 +320,11 @@ const InterviewPrepTool = () => {
     }
   };
 
-  const toggleBookmark = (index: number) => {
-    const newBookmarked = new Set(bookmarked);
-    if (newBookmarked.has(index)) {
-      newBookmarked.delete(index);
-    } else {
-      newBookmarked.add(index);
+  const handleToggleBookmark = (index: number) => {
+    const story = filteredData[index];
+    if (story.id) {
+      toggleBookmark(story.id);
     }
-    setBookmarked(newBookmarked);
   };
 
   const filteredData = useMemo(() => {
@@ -345,10 +346,18 @@ const InterviewPrepTool = () => {
   const displayedData = useMemo(() => {
     let result = filteredData;
     if (showBookmarkedOnly) {
-      result = filteredData.filter((_, index) => bookmarked.has(index));
+      result = filteredData.filter(story => story.id && bookmarks.has(story.id));
     }
     return result;
-  }, [filteredData, showBookmarkedOnly, bookmarked]);
+  }, [filteredData, showBookmarkedOnly, bookmarks]);
+
+  const bookmarkedStories = useMemo(() => {
+    return data.filter(story => story.id && bookmarks.has(story.id));
+  }, [data, bookmarks]);
+
+  const flashcards = useMemo(() => {
+    return generateFlashcards(bookmarkedStories);
+  }, [bookmarkedStories]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -446,7 +455,16 @@ const InterviewPrepTool = () => {
               {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
             </p>
           </div>
-          <div className="flex gap-2">
+            <div className="flex gap-2">
+            {bookmarkedStories.length > 0 && (
+              <Button
+                onClick={() => setShowFlashcards(true)}
+                className="shadow-soft bg-primary hover:bg-primary/90"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Study Flashcards ({bookmarkedStories.length})
+              </Button>
+            )}
             <Button
               onClick={() => setShowUploadDialog(true)}
               variant="outline"
@@ -535,7 +553,7 @@ const InterviewPrepTool = () => {
                 className="shadow-soft"
               >
                 {showBookmarkedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                Show Bookmarked ({bookmarked.size})
+                Show Bookmarked ({bookmarks.size})
               </Button>
 
               {expandedCard !== null && (
@@ -557,8 +575,13 @@ const InterviewPrepTool = () => {
         {currentView === 'table' ? (
           <TableView
             data={paginatedData}
-            bookmarked={bookmarked}
-            onToggleBookmark={toggleBookmark}
+            bookmarked={bookmarks}
+            onToggleBookmark={(index) => {
+              const story = paginatedData[index];
+              if (story.id) {
+                toggleBookmark(story.id);
+              }
+            }}
             getThemeIcon={getThemeIcon}
             getFramingColor={getFramingColor}
           />
@@ -574,9 +597,9 @@ const InterviewPrepTool = () => {
                     item={item}
                     index={actualIndex}
                     isExpanded={expandedCard === actualIndex}
-                    isBookmarked={bookmarked.has(actualIndex)}
+                    isBookmarked={item.id ? bookmarks.has(item.id) : false}
                     onToggleExpanded={() => setExpandedCard(expandedCard === actualIndex ? null : actualIndex)}
-                    onToggleBookmark={() => toggleBookmark(actualIndex)}
+                    onToggleBookmark={() => handleToggleBookmark(index)}
                     getThemeIcon={getThemeIcon}
                     getFramingColor={getFramingColor}
                     getFramingBg={getFramingBg}
@@ -611,12 +634,12 @@ const InterviewPrepTool = () => {
                       
                       <div className="flex items-center gap-2">
                         <Button
-                          onClick={() => toggleBookmark(actualIndex)}
-                          variant={bookmarked.has(actualIndex) ? "bookmark-active" : "bookmark"}
+                          onClick={() => handleToggleBookmark(index)}
+                          variant={item.id && bookmarks.has(item.id) ? "bookmark-active" : "bookmark"}
                           size="icon"
                           className="shadow-soft"
                         >
-                          {bookmarked.has(actualIndex) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                          {item.id && bookmarks.has(item.id) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                         </Button>
                         
                         <Button
@@ -755,6 +778,14 @@ const InterviewPrepTool = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Flashcard Study Mode */}
+        {showFlashcards && (
+          <FlashcardSet
+            flashcards={flashcards}
+            onClose={() => setShowFlashcards(false)}
+          />
         )}
       </div>
     </div>
