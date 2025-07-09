@@ -174,6 +174,17 @@ export function useStorySuggestions(storyId: string | null) {
 
   useEffect(() => {
     loadSuggestions();
+    
+    // Listen for when suggestions are generated
+    const handleSuggestionsGenerated = () => {
+      setTimeout(() => loadSuggestions(), 500);
+    };
+    
+    window.addEventListener('suggestions-generated', handleSuggestionsGenerated);
+    
+    return () => {
+      window.removeEventListener('suggestions-generated', handleSuggestionsGenerated);
+    };
   }, [storyId]);
 
   return {

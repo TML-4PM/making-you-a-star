@@ -156,14 +156,15 @@ export default function StoryOptimizationPage() {
 
       if (error) throw error;
 
-      // Force tab switch with a small delay to ensure suggestions are loaded
-      setTimeout(() => {
-        setActiveTab('suggestions');
-      }, 100);
+      // Switch to suggestions tab and trigger reload
+      setActiveTab('suggestions');
+      
+      // Force a re-render of the SuggestionManager by updating the key
+      window.dispatchEvent(new CustomEvent('suggestions-generated'));
       
       toast({
         title: "Suggestions Generated!",
-        description: "Click the 'Suggestions' tab to view and apply them",
+        description: "AI has created improvement recommendations for your story",
       });
     } catch (error) {
       console.error('Suggestion generation error:', error);
