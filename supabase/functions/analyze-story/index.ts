@@ -119,42 +119,47 @@ Provide response in this exact JSON format:
         const optimization = JSON.parse(optimizationText);
         
         // Store suggestions in database
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        if (storyId && optimization.suggestions?.length > 0) {
+          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
+          const supabaseUrl = Deno.env.get('SUPABASE_URL');
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+          
+          if (supabaseUrl && supabaseKey) {
+            const supabase = createClient(supabaseUrl, supabaseKey);
 
-        if (supabaseUrl && supabaseKey) {
-          // Clear existing pending suggestions for this story
-          await fetch(`${supabaseUrl}/rest/v1/story_suggestions?story_id=eq.${storyId}&status=eq.pending`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/json',
-              'apikey': supabaseKey,
-            },
-          });
+            // Clear existing pending suggestions for this story
+            const { error: deleteError } = await supabase
+              .from('story_suggestions')
+              .delete()
+              .eq('story_id', storyId)
+              .eq('status', 'pending');
 
-          // Insert new suggestions
-          for (const suggestion of optimization.suggestions || []) {
-            await fetch(`${supabaseUrl}/rest/v1/story_suggestions`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${supabaseKey}`,
-                'Content-Type': 'application/json',
-                'apikey': supabaseKey,
-              },
-              body: JSON.stringify({
-                story_id: storyId,
-                section: suggestion.section,
-                suggestion_text: suggestion.suggestion_text,
-                suggestion_type: suggestion.suggestion_type,
-                impact_level: suggestion.impact_level,
-                expected_improvement: suggestion.expected_improvement,
-                original_content: suggestion.original_content,
-                suggested_content: suggestion.suggested_content,
-                confidence: suggestion.confidence,
-                status: 'pending'
-              }),
-            });
+            if (deleteError) {
+              console.error('Error deleting existing suggestions:', deleteError);
+            }
+
+            // Insert new suggestions
+            const { error: insertError } = await supabase
+              .from('story_suggestions')
+              .insert(
+                optimization.suggestions.map((suggestion: any) => ({
+                  story_id: storyId,
+                  section: suggestion.section,
+                  suggestion_text: suggestion.suggestion_text,
+                  suggestion_type: suggestion.suggestion_type,
+                  impact_level: suggestion.impact_level,
+                  expected_improvement: suggestion.expected_improvement,
+                  original_content: suggestion.original_content,
+                  suggested_content: suggestion.suggested_content,
+                  confidence: suggestion.confidence,
+                  status: 'pending'
+                }))
+              );
+
+            if (insertError) {
+              console.error('Error inserting suggestions:', insertError);
+              throw insertError;
+            }
           }
         }
         
