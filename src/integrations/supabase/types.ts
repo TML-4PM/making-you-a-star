@@ -1313,13 +1313,19 @@ export type Database = {
       interview_stories: {
         Row: {
           action: string
+          ai_suggestions: Json | null
+          completeness_score: number | null
           created_at: string
           framing: string
           id: string
+          last_analyzed_at: string | null
           lesson: string
           organisation: string
+          quality_score: number | null
           result: string
+          search_vector: unknown | null
           situation: string
+          star_rating: number | null
           task: string
           theme: string
           updated_at: string
@@ -1327,13 +1333,19 @@ export type Database = {
         }
         Insert: {
           action: string
+          ai_suggestions?: Json | null
+          completeness_score?: number | null
           created_at?: string
           framing: string
           id?: string
+          last_analyzed_at?: string | null
           lesson: string
           organisation: string
+          quality_score?: number | null
           result: string
+          search_vector?: unknown | null
           situation: string
+          star_rating?: number | null
           task: string
           theme: string
           updated_at?: string
@@ -1341,13 +1353,19 @@ export type Database = {
         }
         Update: {
           action?: string
+          ai_suggestions?: Json | null
+          completeness_score?: number | null
           created_at?: string
           framing?: string
           id?: string
+          last_analyzed_at?: string | null
           lesson?: string
           organisation?: string
+          quality_score?: number | null
           result?: string
+          search_vector?: unknown | null
           situation?: string
+          star_rating?: number | null
           task?: string
           theme?: string
           updated_at?: string
@@ -2909,6 +2927,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      story_tags: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          id: string
+          story_id: string
+          tag: string
+          tag_type: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          story_id: string
+          tag: string
+          tag_type?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          story_id?: string
+          tag?: string
+          tag_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_tags_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "interview_stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       testimonials: {
         Row: {
