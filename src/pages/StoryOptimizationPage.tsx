@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { SuggestionManager } from '@/components/SuggestionManager';
 import { BulkApplyEditor } from '@/components/BulkApplyEditor';
+import { SimpleStoryEditor } from '@/components/SimpleStoryEditor';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -27,7 +28,8 @@ import {
   RefreshCw,
   Zap,
   TrendingUp,
-  FileText
+  FileText,
+  Edit3
 } from 'lucide-react';
 
 interface Story {
@@ -69,6 +71,7 @@ export default function StoryOptimizationPage() {
   const [optimizing, setOptimizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'current' | 'suggestions' | 'editor'>('current');
+  const [simpleEditorOpen, setSimpleEditorOpen] = useState(false);
 
   useEffect(() => {
     loadAllStories();
@@ -342,6 +345,13 @@ export default function StoryOptimizationPage() {
             
             <div className="flex gap-2">
               <Button
+                onClick={() => setSimpleEditorOpen(true)}
+                variant="outline"
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Quick Edit
+              </Button>
+              <Button
                 onClick={generateSuggestions}
                 disabled={optimizing}
                 variant="default"
@@ -387,6 +397,16 @@ export default function StoryOptimizationPage() {
             />
           </TabsContent>
         </Tabs>
+
+        {/* Simple Story Editor Modal */}
+        <SimpleStoryEditor
+          stories={allStories}
+          currentStoryId={story.id}
+          isOpen={simpleEditorOpen}
+          onClose={() => setSimpleEditorOpen(false)}
+          onStoryUpdated={loadAllStories}
+          onNavigate={(storyId) => navigate(`/stories/${storyId}/optimize`)}
+        />
       </div>
     </div>
   );
