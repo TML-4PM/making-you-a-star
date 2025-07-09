@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import * as pdfjsLib from 'pdf-parse';
 
 interface Story {
   Organisation: string;
@@ -68,6 +69,115 @@ const UploadPage = () => {
 
   const isCsvFile = (file: File): boolean => {
     return file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv');
+  };
+
+  const isPdfFile = (file: File): boolean => {
+    return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  };
+
+  const processPdfFile = (file: File): Promise<Story[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          const pdfData = await pdfjsLib(arrayBuffer);
+          const text = pdfData.text;
+          
+          if (!text.trim()) {
+            throw new Error("PDF contains no readable text");
+          }
+
+          // Try to parse STAR format from PDF text
+          const stories = parseSTARFromText(text);
+          
+          if (stories.length === 0) {
+            throw new Error("No STAR format stories found in PDF. Please ensure your PDF contains structured interview stories.");
+          }
+          
+          resolve(stories);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error("Failed to read PDF file"));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const parseSTARFromText = (text: string): Story[] => {
+    const stories: Story[] = [];
+    
+    // Look for numbered questions or story patterns
+    const sections = text.split(/\n\s*\n|\d+\.\s*/).filter(section => section.trim());
+    
+    for (const section of sections) {
+      const story = extractSTARFromSection(section);
+      if (story) {
+        stories.push(story);
+      }
+    }
+    
+    return stories;
+  };
+
+  const extractSTARFromSection = (text: string): Story | null => {
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+    
+    let organisation = '';
+    let theme = '';
+    let framing = 'Positive';
+    let situation = '';
+    let task = '';
+    let action = '';
+    let result = '';
+    let lesson = '';
+    
+    // Look for STAR pattern markers
+    const situationMatch = text.match(/(?:S:|Situation:|S:)[^\n]*\n([\s\S]*?)(?=T:|Task:|A:|Action:|R:|Result:|L:|Lesson:|$)/i);
+    const taskMatch = text.match(/(?:T:|Task:|T:)[^\n]*\n([\s\S]*?)(?=A:|Action:|R:|Result:|L:|Lesson:|$)/i);
+    const actionMatch = text.match(/(?:A:|Action:|A:)[^\n]*\n([\s\S]*?)(?=R:|Result:|L:|Lesson:|$)/i);
+    const resultMatch = text.match(/(?:R:|Result:|R:)[^\n]*\n([\s\S]*?)(?=L:|Lesson:|$)/i);
+    const lessonMatch = text.match(/(?:L:|Lesson:|L:)[^\n]*\n([\s\S]*?)$/i);
+    
+    if (situationMatch) situation = situationMatch[1].trim();
+    if (taskMatch) task = taskMatch[1].trim();
+    if (actionMatch) action = actionMatch[1].trim();
+    if (resultMatch) result = resultMatch[1].trim();
+    if (lessonMatch) lesson = lessonMatch[1].trim();
+    
+    // Try to extract theme and organisation from the beginning
+    const firstLines = lines.slice(0, 5);
+    for (const line of firstLines) {
+      if (line.toLowerCase().includes('theme') || line.toLowerCase().includes('category')) {
+        theme = line.replace(/theme[:\s]*/i, '').replace(/category[:\s]*/i, '').trim();
+      }
+      if (line.toLowerCase().includes('organisation') || line.toLowerCase().includes('company')) {
+        organisation = line.replace(/organisation[:\s]*/i, '').replace(/company[:\s]*/i, '').trim();
+      }
+    }
+    
+    // Set defaults if not found
+    if (!organisation) organisation = 'Extracted from PDF';
+    if (!theme) theme = 'General';
+    
+    // Check if we have at least situation, task, action, and result
+    if (situation && task && action && result) {
+      return {
+        Organisation: organisation,
+        Theme: theme,
+        Framing: framing,
+        Situation: situation,
+        Task: task,
+        Action: action,
+        Result: result,
+        Lesson: lesson || 'See analysis for insights'
+      };
+    }
+    
+    return null;
   };
 
   const processExcelFile = (file: File): Promise<Story[]> => {
@@ -187,18 +297,18 @@ const UploadPage = () => {
     if (!file) {
       toast({
         title: "No file selected",
-        description: "Please select a CSV or Excel file to upload",
+        description: "Please select a CSV, Excel, or PDF file to upload",
         variant: "destructive"
       });
       return;
     }
 
-    const isValidFile = isCsvFile(file) || isExcelFile(file);
+    const isValidFile = isCsvFile(file) || isExcelFile(file) || isPdfFile(file);
     
     if (!isValidFile) {
       toast({
         title: "Invalid file type",
-        description: "Please upload a CSV (.csv) or Excel (.xlsx, .xls) file",
+        description: "Please upload a CSV (.csv), Excel (.xlsx, .xls), or PDF (.pdf) file",
         variant: "destructive"
       });
       return;
@@ -223,7 +333,7 @@ const UploadPage = () => {
     }
 
     const startTime = Date.now();
-    const fileType = isExcelFile(file) ? "Excel" : "CSV";
+    const fileType = isExcelFile(file) ? "Excel" : isPdfFile(file) ? "PDF" : "CSV";
     
     toast({
       title: `Processing ${fileType} file...`,
@@ -235,6 +345,8 @@ const UploadPage = () => {
       
       if (isExcelFile(file)) {
         parsedData = await processExcelFile(file);
+      } else if (isPdfFile(file)) {
+        parsedData = await processPdfFile(file);
       } else {
         parsedData = await processCsvFile(file);
       }
@@ -295,7 +407,7 @@ const UploadPage = () => {
               Upload Stories
             </h1>
             <p className="text-muted-foreground text-lg mb-8">
-              Import your interview stories from CSV or Excel files
+              Import your interview stories from CSV, Excel, or PDF files
             </p>
           </div>
 
@@ -305,11 +417,11 @@ const UploadPage = () => {
                 <Upload className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
                 <label className="cursor-pointer group block">
                   <span className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                    Click to upload CSV or Excel file
+                    Click to upload CSV, Excel, or PDF file
                   </span>
                   <input
                     type="file"
-                    accept=".csv,.xlsx,.xls"
+                    accept=".csv,.xlsx,.xls,.pdf"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
@@ -368,8 +480,9 @@ const UploadPage = () => {
                   <h3 className="text-lg font-semibold text-foreground">Important Notes</h3>
                 </div>
                 <ul className="space-y-2 text-muted-foreground">
-                  <li>• First row must contain column headers</li>
-                  <li>• Supports CSV (.csv) and Excel (.xlsx, .xls) formats</li>
+                  <li>• First row must contain column headers (CSV/Excel)</li>
+                  <li>• Supports CSV (.csv), Excel (.xlsx, .xls), and PDF (.pdf) formats</li>
+                  <li>• PDF files should contain STAR format stories with clear S:, T:, A:, R: markers</li>
                   <li>• Use quotes for text containing commas (CSV only)</li>
                   <li>• Framing must be "Positive" or "Negative"</li>
                   <li>• Empty rows will be skipped</li>
@@ -380,16 +493,29 @@ const UploadPage = () => {
             </div>
 
             <div className="bg-muted/30 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">File Format Example</h3>
-              <div className="bg-card rounded-lg p-4 overflow-x-auto">
-                <code className="text-sm text-muted-foreground whitespace-nowrap">
-                  Organisation,Theme,Framing,Situation,Task,Action,Result,Lesson<br/>
-                  "Tech Corp","Leading Change","Positive","We needed to...","My task was...","I took action by...","The result was...","I learned that..."
-                </code>
+              <h3 className="text-lg font-semibold text-foreground mb-4">File Format Examples</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">CSV/Excel Format:</h4>
+                  <div className="bg-card rounded-lg p-4 overflow-x-auto">
+                    <code className="text-sm text-muted-foreground whitespace-nowrap">
+                      Organisation,Theme,Framing,Situation,Task,Action,Result,Lesson<br/>
+                      "Tech Corp","Leading Change","Positive","We needed to...","My task was...","I took action by...","The result was...","I learned that..."
+                    </code>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">PDF Format (STAR structure):</h4>
+                  <div className="bg-card rounded-lg p-4 overflow-x-auto">
+                    <code className="text-sm text-muted-foreground whitespace-pre-line">
+                      S: At Unisys, a major government client was 9 months behind...{'\n'}
+                      T: I was brought in to salvage the program...{'\n'}
+                      A: I ran a 5-day "reset" sprint...{'\n'}
+                      R: We went from 3-month delays to 2-week iterations...
+                    </code>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">
-                Excel files should follow the same column structure as CSV format above.
-              </p>
             </div>
 
             <div className="flex justify-center">
