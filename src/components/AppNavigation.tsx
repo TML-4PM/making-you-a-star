@@ -3,23 +3,26 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
+  Home,
   BookOpen, 
   GraduationCap, 
   Bookmark, 
   Upload, 
   Users, 
   Briefcase,
-  BarChart3
+  BarChart3,
+  Target
 } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 
 const navigation = [
-  { name: "Stories", href: "/", icon: BookOpen },
+  { name: "Home", href: "/", icon: Home },
+  { name: "Stories", href: "/stories", icon: BookOpen },
+  { name: "Interview Prep", href: "/interview-prep", icon: Target },
   { name: "Study", href: "/study", icon: GraduationCap },
   { name: "Practice", href: "/practice", icon: BarChart3 },
-  { name: "Bookmarks", href: "/bookmarks", icon: Bookmark },
   { name: "Groups", href: "/groups", icon: Users },
-  { name: "Job Descriptions", href: "/job-descriptions", icon: Briefcase },
+  { name: "Job History", href: "/job-descriptions", icon: Briefcase },
   { name: "Upload", href: "/upload", icon: Upload },
 ];
 
@@ -32,7 +35,9 @@ export function AppNavigation() {
         <div className="flex h-16 justify-between">
           <div className="flex">
             <div className="flex flex-shrink-0 items-center">
-              <h1 className="text-xl font-bold">Interview Prep</h1>
+              <Link to="/" className="text-xl font-bold hover:text-primary transition-colors">
+                Make me a STAR
+              </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               {navigation.map((item) => {

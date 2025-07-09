@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { AppNavigation } from "./components/AppNavigation";
+import LandingPage from "./pages/LandingPage";
 import StoriesPage from "./pages/StoriesPage";
 import StudyPage from "./pages/StudyPage";
 import PracticePage from "./pages/PracticePage";
@@ -16,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import { GroupsPage } from "./pages/GroupsPage";
 import JobDescriptionsPage from "./pages/JobDescriptionsPage";
 import JobAnalysisPage from "./pages/JobAnalysisPage";
+import InterviewPrepPage from "./pages/InterviewPrepPage";
 
 const queryClient = new QueryClient();
 
@@ -30,12 +32,14 @@ const App = () => (
             <div className="min-h-screen w-full">
               <AppNavigation />
               <Routes>
-                <Route path="/" element={<StoriesPage />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/stories" element={<StoriesPage />} />
                 <Route path="/study" element={<StudyPage />} />
                 <Route path="/practice" element={<PracticePage />} />
                 <Route path="/bookmarks" element={<BookmarksPage />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/groups" element={<GroupsPage />} />
+                <Route path="/interview-prep" element={<InterviewPrepPage />} />
                 <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
                 <Route path="/job-descriptions/:id" element={<JobAnalysisPage />} />
                 <Route path="*" element={<NotFound />} />
