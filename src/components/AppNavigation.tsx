@@ -18,11 +18,11 @@ import { UserMenu } from "./UserMenu";
 const navigation = [
   { name: "Home", href: "/", icon: Home },
   { name: "Stories", href: "/stories", icon: BookOpen },
-  
+  { name: "Interview Prep", href: "/interview-prep", icon: Target },
   { name: "Study", href: "/study", icon: GraduationCap },
   { name: "Practice", href: "/practice", icon: BarChart3 },
   { name: "Groups", href: "/groups", icon: Users },
-  { name: "Interview Prep", href: "/job-descriptions", icon: Target },
+  { name: "Job History", href: "/job-descriptions", icon: Briefcase },
   { name: "Upload", href: "/upload", icon: Upload },
 ];
 

@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 
 export const useBookmarks = () => {
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
 
   // Load bookmarks from database
   const loadBookmarks = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
         return;
@@ -41,6 +40,7 @@ export const useBookmarks = () => {
   // Toggle bookmark
   const toggleBookmark = async (storyId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
           title: "Authentication required",
@@ -92,7 +92,7 @@ export const useBookmarks = () => {
 
   useEffect(() => {
     loadBookmarks();
-  }, [user]);
+  }, []);
 
   return {
     bookmarks,

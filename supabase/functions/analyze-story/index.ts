@@ -24,17 +24,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-  const { story, storyId, mode = 'analyze' } = await req.json();
+    const { story, storyId, mode = 'analyze' } = await req.json();
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    if (mode === 'suggestions' || mode === 'optimize') {
-      // Optimization mode: Generate granular suggestions for each section
+    if (mode === 'optimize') {
+      // Optimization mode: Generate enhanced version of the story
       const optimizationPrompt = `
-You are an expert interview coach specializing in optimizing STAR format stories. Generate detailed, granular improvement suggestions for each section.
+You are an expert interview coach specializing in optimizing STAR format stories. Your task is to enhance this story to maximize its impact, quality score, and interview effectiveness.
 
 **Current Story:**
 Theme: ${story.theme}
@@ -45,39 +45,36 @@ Action: ${story.action}
 Result: ${story.result}
 Lesson: ${story.lesson}
 
-**Your task:** Generate 2-4 specific, actionable suggestions for each section that can be applied individually.
+**Optimization Guidelines:**
+1. **Situation**: Add senior-level context, business stakes, complexity
+2. **Task**: Clarify leadership role, strategic ownership, scale of responsibility
+3. **Action**: Emphasize leadership behaviors, cross-functional collaboration, strategic thinking
+4. **Result**: Quantify impact with metrics, business value, long-term effects
+5. **Lesson**: Show growth mindset, scalable insights, leadership evolution
 
-For each suggestion, provide:
-- suggestion_text: Clear description of what to improve
-- suggestion_type: One of "quantification", "leadership", "impact", "clarity", "structure"
-- impact_level: "high", "medium", or "low" 
-- expected_improvement: Points (1-5) this would add to quality score
-- original_content: Current text that needs improvement
-- suggested_content: Your improved version
-- confidence: How confident you are (0.1-1.0)
-
-Focus on:
-- Quantifiable metrics and specific numbers
-- Leadership behaviors and strategic thinking
-- Business impact and stakeholder value
-- Clear, compelling storytelling
-- Senior-level competencies
+**Enhancement Focus:**
+- Add specific metrics and quantified results
+- Include leadership and strategic elements
+- Strengthen business impact and stakeholder value
+- Improve storytelling flow and engagement
+- Demonstrate senior-level competencies
 
 Provide response in this exact JSON format:
 {
-  "suggestions": [
-    {
-      "section": "situation",
-      "suggestion_text": "Add specific metrics about team size and project scope",
-      "suggestion_type": "quantification",
-      "impact_level": "high",
-      "expected_improvement": 3,
-      "original_content": "current situation text...",
-      "suggested_content": "improved situation text...",
-      "confidence": 0.9
-    }
-  ],
-  "overall_quality_increase": 12
+  "situation": "Enhanced situation with more context and stakes",
+  "task": "Clarified task with leadership ownership",
+  "action": "Strengthened actions with leadership focus",
+  "result": "Quantified results with business impact",
+  "lesson": "Deeper lesson with growth mindset",
+  "improvements": {
+    "situation": ["specific improvement 1", "specific improvement 2"],
+    "task": ["specific improvement 1", "specific improvement 2"],
+    "action": ["specific improvement 1", "specific improvement 2"],
+    "result": ["specific improvement 1", "specific improvement 2"],
+    "lesson": ["specific improvement 1", "specific improvement 2"]
+  },
+  "expected_quality_increase": 8,
+  "priority_focus": ["Leadership Impact", "Quantified Results", "Strategic Thinking"]
 }
 `;
 
@@ -117,52 +114,6 @@ Provide response in this exact JSON format:
 
       try {
         const optimization = JSON.parse(optimizationText);
-        
-        // Store suggestions in database
-        if (storyId && optimization.suggestions?.length > 0) {
-          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
-          const supabaseUrl = Deno.env.get('SUPABASE_URL');
-          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-          
-          if (supabaseUrl && supabaseKey) {
-            const supabase = createClient(supabaseUrl, supabaseKey);
-
-            // Clear existing pending suggestions for this story
-            const { error: deleteError } = await supabase
-              .from('story_suggestions')
-              .delete()
-              .eq('story_id', storyId)
-              .eq('status', 'pending');
-
-            if (deleteError) {
-              console.error('Error deleting existing suggestions:', deleteError);
-            }
-
-            // Insert new suggestions
-            const { error: insertError } = await supabase
-              .from('story_suggestions')
-              .insert(
-                optimization.suggestions.map((suggestion: any) => ({
-                  story_id: storyId,
-                  section: suggestion.section,
-                  suggestion_text: suggestion.suggestion_text,
-                  suggestion_type: suggestion.suggestion_type,
-                  impact_level: suggestion.impact_level,
-                  expected_improvement: suggestion.expected_improvement,
-                  original_content: suggestion.original_content,
-                  suggested_content: suggestion.suggested_content,
-                  confidence: suggestion.confidence,
-                  status: 'pending'
-                }))
-              );
-
-            if (insertError) {
-              console.error('Error inserting suggestions:', insertError);
-              throw insertError;
-            }
-          }
-        }
-        
         return new Response(JSON.stringify(optimization), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
