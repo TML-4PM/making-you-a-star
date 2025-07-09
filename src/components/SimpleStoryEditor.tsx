@@ -130,11 +130,25 @@ export function SimpleStoryEditor({
   };
 
   const applySuggestion = (suggestion: ParsedSuggestion) => {
+    console.log('Applying suggestion:', suggestion);
+    
     const field = suggestion.section as keyof Story;
-    if (!field || !editedStory.hasOwnProperty(field)) return;
+    console.log('Target field:', field);
+    
+    // Check if the field is valid
+    if (!field || !['theme', 'organisation', 'situation', 'task', 'action', 'result', 'lesson', 'framing'].includes(field)) {
+      console.warn('Invalid field for suggestion:', field);
+      toast({
+        title: "Invalid Section",
+        description: `Cannot apply suggestion to section: ${field}`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     const currentValue = editedStory[field] as string || '';
     const previousValue = currentValue;
+    console.log('Current value:', currentValue);
     
     let newValue: string;
     if (currentValue.trim() === '') {
@@ -146,6 +160,8 @@ export function SimpleStoryEditor({
       const separator = needsSpace ? '. ' : ' ';
       newValue = currentValue + separator + suggestion.text;
     }
+
+    console.log('New value:', newValue);
 
     // Store undo action
     setUndoStack(prev => [...prev, {
