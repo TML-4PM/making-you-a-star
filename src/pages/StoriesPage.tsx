@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles, FolderPlus, FileText, Filter } from 'lucide-react';
-import heroImage from '@/assets/hero-star-image.jpg';
+import { Search, ChevronDown, ChevronUp, Eye, EyeOff, X, Database, Save, Bookmark, BookmarkCheck, Clock, Target, Activity, Award, Building, Users, Lightbulb, AlertCircle, CheckCircle, RotateCcw, Star, Sparkles, FolderPlus, FileText, Filter, MessageSquare } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,7 @@ import { ExpandedContent } from "@/components/ExpandedContent";
 import { AdvancedSearch } from "@/components/AdvancedSearch";
 import { StoryAnalytics } from "@/components/StoryAnalytics";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { QuestionSubmission } from "@/components/QuestionSubmission";
 
 interface Story {
   id?: string;
@@ -267,99 +268,95 @@ const StoriesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-primary">
-        <div className="absolute inset-0">
-          <img 
-            src={heroImage} 
-            alt="STAR Method Interview Preparation" 
-            className="w-full h-full object-cover opacity-20"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary/60"></div>
-        </div>
-        <div className="relative max-w-6xl mx-auto px-6 py-20">
-          <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center gap-3">
-              <Star className="w-12 h-12 text-white animate-pulse" />
-              <Sparkles className="w-8 h-8 text-white/80" />
-              <Star className="w-10 h-10 text-white/90" />
-            </div>
-          </div>
-          <div className="text-center text-white space-y-6">
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
-              Make me a <span className="bg-white/20 px-4 py-2 rounded-lg">STAR</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-              Master the STAR method with AI-powered insights. Search, analyze, and perfect your interview stories.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between animate-fade-in">
-          <div className="flex items-center gap-3">
-            <Star className="w-5 h-5 text-primary animate-pulse" />
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Your Interview Stories</h2>
-              <p className="text-muted-foreground mt-1">
-                {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
-              </p>
-            </div>
+        {/* Header with Instructions */}
+        <div className="text-center space-y-4 animate-fade-in">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Star className="w-8 h-8 text-primary" />
+            <h1 className="text-4xl font-bold text-foreground">Interview Stories & Questions</h1>
+            <Star className="w-8 h-8 text-primary" />
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setUseAdvancedSearch(!useAdvancedSearch)}
-              variant={useAdvancedSearch ? "default" : "outline"}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              {useAdvancedSearch ? 'Simple Search' : 'Advanced Search'}
-            </Button>
-            <Button
-              onClick={loadStoriesFromDatabase}
-              variant="outline"
-            >
-              <Database className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
+          <p className="text-muted-foreground max-w-3xl mx-auto">
+            Browse and search through interview stories using the STAR method. Use filters to find specific themes, 
+            bookmark your favorites, and submit your own questions for future reference.
+          </p>
         </div>
 
-        {/* Search Section */}
-        <div className="bg-card rounded-xl shadow-medium border p-6 space-y-4 animate-slide-up sticky top-20 z-10">
-          {useAdvancedSearch ? (
-            <AdvancedSearch 
-              onSearch={handleAdvancedSearch}
-              availableThemes={themes}
-              availableOrganisations={organisations}
-            />
-          ) : (
-            <div className="flex gap-4 items-center">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    type="text"
-                    placeholder="Search stories..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+        <Tabs defaultValue="browse" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="browse" className="flex items-center gap-2">
+              <Database className="w-4 h-4" />
+              Browse Stories
+            </TabsTrigger>
+            <TabsTrigger value="questions" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Ask Questions
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="browse" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Story Collection</h2>
+                  <p className="text-muted-foreground mt-1">
+                    {data.length} stories loaded • {displayedData.length} showing • Page {currentPage} of {totalPages}
+                  </p>
                 </div>
               </div>
-              <Button
-                onClick={() => setShowBookmarkedOnly(!showBookmarkedOnly)}
-                variant={showBookmarkedOnly ? "default" : "outline"}
-              >
-                {showBookmarkedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-                Bookmarked ({bookmarks.size})
-              </Button>
-              <ViewToggle currentView={currentView} onViewChange={setCurrentView} />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setUseAdvancedSearch(!useAdvancedSearch)}
+                  variant={useAdvancedSearch ? "default" : "outline"}
+                >
+                  <Filter className="w-4 h-4 mr-2" />
+                  {useAdvancedSearch ? 'Simple Search' : 'Advanced Search'}
+                </Button>
+                <Button
+                  onClick={loadStoriesFromDatabase}
+                  variant="outline"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Stories Display */}
+            {/* Search Section */}
+            <div className="bg-card rounded-xl shadow-medium border p-6 space-y-4 animate-slide-up sticky top-20 z-10">
+              {useAdvancedSearch ? (
+                <AdvancedSearch 
+                  onSearch={handleAdvancedSearch}
+                  availableThemes={themes}
+                  availableOrganisations={organisations}
+                />
+              ) : (
+                <div className="flex gap-4 items-center">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        type="text"
+                        placeholder="Search stories..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setShowBookmarkedOnly(!showBookmarkedOnly)}
+                    variant={showBookmarkedOnly ? "default" : "outline"}
+                  >
+                    {showBookmarkedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                    Bookmarked ({bookmarks.size})
+                  </Button>
+                  <ViewToggle currentView={currentView} onViewChange={setCurrentView} />
+                </div>
+              )}
+            </div>
+
+            {/* Stories Display */}
         {currentView === 'table' ? (
           <TableView
             data={paginatedData}
@@ -550,6 +547,12 @@ const StoriesPage = () => {
             </Button>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="questions" className="space-y-6">
+            <QuestionSubmission />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

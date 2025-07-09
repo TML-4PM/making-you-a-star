@@ -3538,6 +3538,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_questions: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          question_text: string
+          question_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          question_text: string
+          question_type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          question_text?: string
+          question_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_reputation: {
         Row: {
           comment_karma: number | null
