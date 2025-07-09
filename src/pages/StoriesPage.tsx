@@ -601,7 +601,7 @@ const StoriesPage = () => {
                          {/* Suggestions Section */}
                          {item.id && <QuickSuggestions storyId={item.id} onApplied={loadStoriesFromDatabase} />}
 
-                         {/* Story Analytics */}
+                        {/* Story Analytics */}
                          {item.id && (
                            <StoryAnalytics 
                              story={{
@@ -623,7 +623,7 @@ const StoriesPage = () => {
                                lesson_score: item.lesson_score || 0,
                                values_bonus: item.values_bonus || 0,
                                total_star_score: item.total_star_score || 0,
-                               ai_suggestions: item.ai_suggestions || [],
+                               ai_suggestions: [], // No longer display old suggestions
                                last_analyzed_at: item.last_analyzed_at || null,
                                tags: []
                              }}
