@@ -67,8 +67,6 @@ const StoriesPage = () => {
   }, [user]);
 
   const loadStoriesFromDatabase = async () => {
-    if (!user) return;
-    
     try {
       setLoading(true);
       const { data: stories, error } = await supabase
@@ -81,7 +79,6 @@ const StoriesPage = () => {
             confidence
           )
         `)
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
