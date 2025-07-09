@@ -156,11 +156,14 @@ export default function StoryOptimizationPage() {
 
       if (error) throw error;
 
-      setActiveTab('suggestions');
+      // Force tab switch with a small delay to ensure suggestions are loaded
+      setTimeout(() => {
+        setActiveTab('suggestions');
+      }, 100);
       
       toast({
         title: "Suggestions Generated!",
-        description: "AI has created improvement recommendations for your story",
+        description: "Click the 'Suggestions' tab to view and apply them",
       });
     } catch (error) {
       console.error('Suggestion generation error:', error);
@@ -359,7 +362,11 @@ export default function StoryOptimizationPage() {
               storyId={story.id} 
               onSuggestionsApplied={() => {
                 loadAllStories();
-                setActiveTab('current');
+                // Stay on suggestions tab to show updated state
+                toast({
+                  title: "Story Updated",
+                  description: "Your story has been improved and re-analyzed",
+                });
               }}
             />
           </TabsContent>

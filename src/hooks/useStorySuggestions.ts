@@ -120,6 +120,32 @@ export function useStorySuggestions(storyId: string | null) {
           });
       }
 
+      // Get updated story data for re-analysis
+      const { data: updatedStory, error: fetchError } = await supabase
+        .from('interview_stories')
+        .select('*')
+        .eq('id', storyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Trigger re-analysis to update quality scores
+      await supabase.functions.invoke('analyze-story', {
+        body: {
+          story: {
+            theme: updatedStory.theme,
+            organisation: updatedStory.organisation,
+            situation: updatedStory.situation,
+            task: updatedStory.task,
+            action: updatedStory.action,
+            result: updatedStory.result,
+            lesson: updatedStory.lesson,
+          },
+          storyId: storyId,
+          mode: 'analyze'
+        },
+      });
+
       // Update local state
       setSuggestions(prev =>
         prev.map(s =>
@@ -131,7 +157,7 @@ export function useStorySuggestions(storyId: string | null) {
 
       toast({
         title: "Suggestions Applied",
-        description: `${selectedSuggestionIds.length} suggestions have been applied to your story`,
+        description: `${selectedSuggestionIds.length} suggestions applied and story re-analyzed`,
       });
 
       return true;
