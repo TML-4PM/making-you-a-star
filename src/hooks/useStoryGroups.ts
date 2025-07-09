@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface StoryGroup {
   id: string;
@@ -25,6 +26,7 @@ export const useStoryGroups = () => {
   const [groups, setGroups] = useState<StoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const loadGroups = async () => {
     try {
@@ -62,9 +64,13 @@ export const useStoryGroups = () => {
 
   const createGroup = async (groupData: Omit<StoryGroup, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
+      if (!user?.id) {
+        throw new Error('User must be authenticated to create story groups');
+      }
+
       const { data, error } = await supabase
         .from('story_groups')
-        .insert([{ ...groupData, user_id: (await supabase.auth.getUser()).data.user?.id }])
+        .insert([{ ...groupData, user_id: user.id }])
         .select()
         .single();
 
@@ -80,7 +86,7 @@ export const useStoryGroups = () => {
       console.error('Error creating group:', error);
       toast({
         title: "Error",
-        description: "Failed to create story group",
+        description: error instanceof Error ? error.message : "Failed to create story group",
         variant: "destructive"
       });
       throw error;
