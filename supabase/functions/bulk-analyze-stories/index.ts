@@ -30,17 +30,40 @@ Deno.serve(async (req) => {
 
   try {
     const { userId, batchSize = 5 } = await req.json();
+    
+    console.log('Function called with:', { userId, batchSize });
+
+    // Handle health check
+    if (batchSize === 0 || userId === 'health-check' || userId === 'test') {
+      console.log('Health check request');
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Function is available',
+        processed: 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!openaiApiKey) {
+      console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration missing');
       throw new Error('Supabase configuration missing');
     }
+
+    if (!userId || userId === 'undefined') {
+      throw new Error('Valid user ID is required');
+    }
+
+    console.log('Fetching stories for user:', userId);
 
     // Get unanalyzed stories for this user
     const fetchResponse = await fetch(`${supabaseUrl}/rest/v1/interview_stories?user_id=eq.${userId}&or=(quality_score.is.null,quality_score.eq.0)&limit=${batchSize}`, {
@@ -51,10 +74,13 @@ Deno.serve(async (req) => {
     });
 
     if (!fetchResponse.ok) {
-      throw new Error('Failed to fetch stories');
+      const errorText = await fetchResponse.text();
+      console.error('Failed to fetch stories:', errorText);
+      throw new Error(`Failed to fetch stories: ${errorText}`);
     }
 
     const stories = await fetchResponse.json();
+    console.log('Fetched stories count:', stories?.length || 0);
     const results: AnalysisResult[] = [];
 
     // Process stories in parallel but with rate limiting

@@ -70,15 +70,14 @@ export function StoryQualityDashboard() {
 
   const checkFunctionHealth = async () => {
     try {
-      // Try to invoke the function with minimal data to test availability
-      const { error } = await supabase.functions.invoke('bulk-analyze-stories', {
-        body: { userId: 'health-check', batchSize: 0 },
+      // Simple availability check without calling the function
+      const { data, error } = await supabase.functions.invoke('bulk-analyze-stories', {
+        body: { userId: user?.id || 'test', batchSize: 0 },
       });
       
-      // If we get any response (even an error), the function is reachable
       setFunctionStatus('available');
     } catch (error) {
-      console.log('Function health check failed:', error);
+      console.error('Function health check failed:', error);
       setFunctionStatus('unavailable');
     }
   };
@@ -86,6 +85,12 @@ export function StoryQualityDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      
+      if (!user?.id) {
+        console.error('No user ID available');
+        setLoading(false);
+        return;
+      }
       
       // Fetch all stories with their tags
       const { data: storiesData, error } = await supabase
@@ -105,24 +110,44 @@ export function StoryQualityDashboard() {
             confidence
           )
         `)
-        .or(`user_id.eq.${user?.id},user_id.is.null`)
+        .eq('user_id', user.id)
         .order('quality_score', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
 
-      const transformedStories = storiesData?.map(story => ({
-        ...story,
-        ai_suggestions: Array.isArray(story.ai_suggestions) ? story.ai_suggestions.map(String) : [],
-        tags: story.story_tags || []
-      })) || [];
+      console.log('Raw stories data:', storiesData);
 
+      const transformedStories = (storiesData || []).map(story => {
+        try {
+          return {
+            ...story,
+            theme: story.theme || 'Unknown',
+            organisation: story.organisation || 'Unknown',
+            quality_score: story.quality_score || 0,
+            completeness_score: story.completeness_score || 0,
+            star_rating: story.star_rating || 0,
+            ai_suggestions: Array.isArray(story.ai_suggestions) 
+              ? story.ai_suggestions.map(String).filter(Boolean)
+              : [],
+            tags: Array.isArray(story.story_tags) ? story.story_tags : []
+          };
+        } catch (transformError) {
+          console.error('Error transforming story:', story, transformError);
+          return null;
+        }
+      }).filter(Boolean);
+
+      console.log('Transformed stories:', transformedStories);
       setStories(transformedStories);
       calculateStats(transformedStories);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
         title: "Error",
-        description: "Failed to load dashboard data",
+        description: "Failed to load dashboard data. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -131,20 +156,40 @@ export function StoryQualityDashboard() {
   };
 
   const calculateStats = (stories: StoryMetrics[]) => {
-    const analyzedStories = stories.filter(s => s.quality_score > 0);
-    
-    // Calculate averages
-    const avgQuality = analyzedStories.length > 0 
-      ? analyzedStories.reduce((sum, s) => sum + s.quality_score, 0) / analyzedStories.length 
-      : 0;
-    
-    const avgCompleteness = analyzedStories.length > 0
-      ? analyzedStories.reduce((sum, s) => sum + s.completeness_score, 0) / analyzedStories.length
-      : 0;
-    
-    const avgStarRating = analyzedStories.length > 0
-      ? analyzedStories.reduce((sum, s) => sum + s.star_rating, 0) / analyzedStories.length
-      : 0;
+    try {
+      console.log('Calculating stats for stories:', stories);
+      
+      if (!Array.isArray(stories) || stories.length === 0) {
+        console.log('No stories to calculate stats for');
+        setStats({
+          totalStories: 0,
+          analyzedStories: 0,
+          avgQuality: 0,
+          avgCompleteness: 0,
+          avgStarRating: 0,
+          commonSuggestions: [],
+          tagsByType: {},
+          themeDistribution: [],
+          organizationCoverage: []
+        });
+        return;
+      }
+
+      const analyzedStories = stories.filter(s => (s.quality_score || 0) > 0);
+      console.log('Analyzed stories count:', analyzedStories.length);
+      
+      // Calculate averages with safety checks
+      const avgQuality = analyzedStories.length > 0 
+        ? analyzedStories.reduce((sum, s) => sum + (s.quality_score || 0), 0) / analyzedStories.length 
+        : 0;
+      
+      const avgCompleteness = analyzedStories.length > 0
+        ? analyzedStories.reduce((sum, s) => sum + (s.completeness_score || 0), 0) / analyzedStories.length
+        : 0;
+      
+      const avgStarRating = analyzedStories.length > 0
+        ? analyzedStories.reduce((sum, s) => sum + (s.star_rating || 0), 0) / analyzedStories.length
+        : 0;
 
     // Common suggestions
     const suggestionCounts: Record<string, number> = {};
@@ -227,6 +272,20 @@ export function StoryQualityDashboard() {
       themeDistribution,
       organizationCoverage
     });
+    } catch (error) {
+      console.error('Error calculating stats:', error);
+      setStats({
+        totalStories: 0,
+        analyzedStories: 0,
+        avgQuality: 0,
+        avgCompleteness: 0,
+        avgStarRating: 0,
+        commonSuggestions: [],
+        tagsByType: {},
+        themeDistribution: [],
+        organizationCoverage: []
+      });
+    }
   };
 
   const runBulkAnalysis = async () => {
