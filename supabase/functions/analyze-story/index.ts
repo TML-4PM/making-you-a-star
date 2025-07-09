@@ -32,9 +32,9 @@ Deno.serve(async (req) => {
     }
 
     if (mode === 'optimize') {
-      // Optimization mode: Generate enhanced version of the story
+      // Optimization mode: Generate granular suggestions for each section
       const optimizationPrompt = `
-You are an expert interview coach specializing in optimizing STAR format stories. Your task is to enhance this story to maximize its impact, quality score, and interview effectiveness.
+You are an expert interview coach specializing in optimizing STAR format stories. Generate detailed, granular improvement suggestions for each section.
 
 **Current Story:**
 Theme: ${story.theme}
@@ -45,36 +45,39 @@ Action: ${story.action}
 Result: ${story.result}
 Lesson: ${story.lesson}
 
-**Optimization Guidelines:**
-1. **Situation**: Add senior-level context, business stakes, complexity
-2. **Task**: Clarify leadership role, strategic ownership, scale of responsibility
-3. **Action**: Emphasize leadership behaviors, cross-functional collaboration, strategic thinking
-4. **Result**: Quantify impact with metrics, business value, long-term effects
-5. **Lesson**: Show growth mindset, scalable insights, leadership evolution
+**Your task:** Generate 2-4 specific, actionable suggestions for each section that can be applied individually.
 
-**Enhancement Focus:**
-- Add specific metrics and quantified results
-- Include leadership and strategic elements
-- Strengthen business impact and stakeholder value
-- Improve storytelling flow and engagement
-- Demonstrate senior-level competencies
+For each suggestion, provide:
+- suggestion_text: Clear description of what to improve
+- suggestion_type: One of "quantification", "leadership", "impact", "clarity", "structure"
+- impact_level: "high", "medium", or "low" 
+- expected_improvement: Points (1-5) this would add to quality score
+- original_content: Current text that needs improvement
+- suggested_content: Your improved version
+- confidence: How confident you are (0.1-1.0)
+
+Focus on:
+- Quantifiable metrics and specific numbers
+- Leadership behaviors and strategic thinking
+- Business impact and stakeholder value
+- Clear, compelling storytelling
+- Senior-level competencies
 
 Provide response in this exact JSON format:
 {
-  "situation": "Enhanced situation with more context and stakes",
-  "task": "Clarified task with leadership ownership",
-  "action": "Strengthened actions with leadership focus",
-  "result": "Quantified results with business impact",
-  "lesson": "Deeper lesson with growth mindset",
-  "improvements": {
-    "situation": ["specific improvement 1", "specific improvement 2"],
-    "task": ["specific improvement 1", "specific improvement 2"],
-    "action": ["specific improvement 1", "specific improvement 2"],
-    "result": ["specific improvement 1", "specific improvement 2"],
-    "lesson": ["specific improvement 1", "specific improvement 2"]
-  },
-  "expected_quality_increase": 8,
-  "priority_focus": ["Leadership Impact", "Quantified Results", "Strategic Thinking"]
+  "suggestions": [
+    {
+      "section": "situation",
+      "suggestion_text": "Add specific metrics about team size and project scope",
+      "suggestion_type": "quantification",
+      "impact_level": "high",
+      "expected_improvement": 3,
+      "original_content": "current situation text...",
+      "suggested_content": "improved situation text...",
+      "confidence": 0.9
+    }
+  ],
+  "overall_quality_increase": 12
 }
 `;
 
@@ -114,6 +117,47 @@ Provide response in this exact JSON format:
 
       try {
         const optimization = JSON.parse(optimizationText);
+        
+        // Store suggestions in database
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+        if (supabaseUrl && supabaseKey) {
+          // Clear existing pending suggestions for this story
+          await fetch(`${supabaseUrl}/rest/v1/story_suggestions?story_id=eq.${storyId}&status=eq.pending`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+              'apikey': supabaseKey,
+            },
+          });
+
+          // Insert new suggestions
+          for (const suggestion of optimization.suggestions || []) {
+            await fetch(`${supabaseUrl}/rest/v1/story_suggestions`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json',
+                'apikey': supabaseKey,
+              },
+              body: JSON.stringify({
+                story_id: storyId,
+                section: suggestion.section,
+                suggestion_text: suggestion.suggestion_text,
+                suggestion_type: suggestion.suggestion_type,
+                impact_level: suggestion.impact_level,
+                expected_improvement: suggestion.expected_improvement,
+                original_content: suggestion.original_content,
+                suggested_content: suggestion.suggested_content,
+                confidence: suggestion.confidence,
+                status: 'pending'
+              }),
+            });
+          }
+        }
+        
         return new Response(JSON.stringify(optimization), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

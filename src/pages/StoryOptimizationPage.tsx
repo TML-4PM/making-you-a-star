@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { SuggestionManager } from '@/components/SuggestionManager';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -82,7 +83,7 @@ export default function StoryOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'current' | 'optimized' | 'comparison'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'suggestions' | 'optimized' | 'comparison'>('current');
 
   useEffect(() => {
     loadAllStories();
@@ -398,10 +399,13 @@ export default function StoryOptimizationPage() {
         </Card>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'current' | 'optimized' | 'comparison')} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'current' | 'suggestions' | 'optimized' | 'comparison')} className="w-full">
           <div className="flex items-center justify-between">
-            <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsList className="grid w-full max-w-2xl grid-cols-4">
               <TabsTrigger value="current">Current Story</TabsTrigger>
+              <TabsTrigger value="suggestions">
+                Suggestions
+              </TabsTrigger>
               <TabsTrigger value="optimized" disabled={!optimizedStory}>
                 Optimized
                 {optimizedStory && <Badge className="ml-2" variant="secondary">New</Badge>}
@@ -411,7 +415,10 @@ export default function StoryOptimizationPage() {
             
             <div className="flex gap-2">
               <Button
-                onClick={optimizeStory}
+                onClick={() => {
+                  optimizeStory();
+                  setActiveTab('suggestions');
+                }}
                 disabled={optimizing}
                 variant="default"
               >
@@ -420,28 +427,23 @@ export default function StoryOptimizationPage() {
                 ) : (
                   <Brain className="w-4 h-4 mr-2" />
                 )}
-                {optimizing ? 'Optimizing...' : 'Optimize Story'}
+                {optimizing ? 'Generating...' : 'Generate Suggestions'}
               </Button>
-              
-              {optimizedStory && (
-                <Button
-                  onClick={applyOptimizations}
-                  disabled={saving}
-                  variant="outline"
-                >
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2" />
-                  )}
-                  {saving ? 'Saving...' : 'Apply Changes'}
-                </Button>
-              )}
             </div>
           </div>
 
           <TabsContent value="current" className="space-y-6">
             <StoryDisplay story={story} title="Current Story" />
+          </TabsContent>
+
+          <TabsContent value="suggestions" className="space-y-6">
+            <SuggestionManager 
+              storyId={story.id} 
+              onSuggestionsApplied={() => {
+                loadAllStories();
+                setActiveTab('current');
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="optimized" className="space-y-6">
