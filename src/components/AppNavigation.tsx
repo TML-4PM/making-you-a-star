@@ -1,49 +1,85 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { BookOpen, Upload, Heart, Home, GraduationCap, FolderOpen, FileText } from 'lucide-react';
-import { Button } from "@/components/ui/button";
 
-export const AppNavigation = () => {
-  const navItems = [
-    { path: '/', label: 'Stories', icon: Home },
-    { path: '/groups', label: 'Groups', icon: FolderOpen },
-    { path: '/job-descriptions', label: 'Jobs', icon: FileText },
-    { path: '/bookmarks', label: 'Bookmarks', icon: Heart },
-    { path: '/study', label: 'Study', icon: GraduationCap },
-    { path: '/upload', label: 'Upload', icon: Upload },
-  ];
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { 
+  BookOpen, 
+  GraduationCap, 
+  Bookmark, 
+  Upload, 
+  Users, 
+  Briefcase,
+  BarChart3
+} from "lucide-react";
+import { UserMenu } from "./UserMenu";
+
+const navigation = [
+  { name: "Stories", href: "/", icon: BookOpen },
+  { name: "Study", href: "/study", icon: GraduationCap },
+  { name: "Practice", href: "/practice", icon: BarChart3 },
+  { name: "Bookmarks", href: "/bookmarks", icon: Bookmark },
+  { name: "Groups", href: "/groups", icon: Users },
+  { name: "Job Descriptions", href: "/job-descriptions", icon: Briefcase },
+  { name: "Upload", href: "/upload", icon: Upload },
+];
+
+export function AppNavigation() {
+  const location = useLocation();
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50 shadow-soft">
-      <div className="max-w-6xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Make me a STAR
-            </h1>
+    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 justify-between">
+          <div className="flex">
+            <div className="flex flex-shrink-0 items-center">
+              <h1 className="text-xl font-bold">Interview Prep</h1>
+            </div>
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={cn(
+                      "inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium",
+                      location.pathname === item.href
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-          
-          <nav className="flex items-center gap-2">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => 
-                  `flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    isActive 
-                      ? 'bg-primary text-primary-foreground shadow-soft' 
-                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                  }`
-                }
-              >
-                <item.icon className="w-4 h-4" />
-                <span className="font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+          <div className="flex items-center">
+            <UserMenu />
+          </div>
+          <div className="flex sm:hidden">
+            <div className="space-y-1 px-4 pb-3 pt-2">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.name}
+                    asChild
+                    variant={location.pathname === item.href ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                  >
+                    <Link to={item.href}>
+                      <Icon className="mr-2 h-4 w-4" />
+                      {item.name}
+                    </Link>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
-    </header>
+    </nav>
   );
-};
+}

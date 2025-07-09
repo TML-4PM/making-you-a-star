@@ -227,6 +227,66 @@ export type Database = {
           },
         ]
       }
+      australian_businesses: {
+        Row: {
+          business_description: string | null
+          company_name: string
+          company_size: string | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          created_at: string
+          delegation_year: number | null
+          id: string
+          industry_sector: string
+          is_featured: boolean | null
+          logo_url: string | null
+          partnership_interests: string | null
+          pillar_alignment: string | null
+          specialization: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          business_description?: string | null
+          company_name: string
+          company_size?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          delegation_year?: number | null
+          id?: string
+          industry_sector: string
+          is_featured?: boolean | null
+          logo_url?: string | null
+          partnership_interests?: string | null
+          pillar_alignment?: string | null
+          specialization?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          business_description?: string | null
+          company_name?: string
+          company_size?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          delegation_year?: number | null
+          id?: string
+          industry_sector?: string
+          is_featured?: boolean | null
+          logo_url?: string | null
+          partnership_interests?: string | null
+          pillar_alignment?: string | null
+          specialization?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       bundle_products: {
         Row: {
           animal_count: number
