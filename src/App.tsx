@@ -14,8 +14,8 @@ import BookmarksPage from "./pages/BookmarksPage";
 import UploadPage from "./pages/UploadPage";
 import NotFound from "./pages/NotFound";
 import { GroupsPage } from "./pages/GroupsPage";
-import { JobDescriptionsPage } from "./pages/JobDescriptionsPage";
-import { JobAnalysisPage } from "./pages/JobAnalysisPage";
+import JobDescriptionsPage from "./pages/JobDescriptionsPage";
+import JobAnalysisPage from "./pages/JobAnalysisPage";
 
 const queryClient = new QueryClient();
 

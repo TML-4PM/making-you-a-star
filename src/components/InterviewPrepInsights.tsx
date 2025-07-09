@@ -1,277 +1,329 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { 
-  Lightbulb, 
+  Brain, 
   Target, 
-  CheckSquare, 
-  Star, 
-  TrendingUp,
-  Clock,
+  TrendingUp, 
+  AlertTriangle, 
+  CheckCircle, 
+  Star,
+  BookOpen,
   Users,
-  ChevronRight,
-  Book
+  Award,
+  Lightbulb
 } from 'lucide-react';
 
-interface StoryMatch {
-  id: string;
-  story_id: string;
-  match_score: number;
-  match_reasons: string[];
-  is_recommended: boolean;
-  ai_improvements?: string[];
-  interview_stories: {
-    id: string;
-    theme: string;
-    organisation: string;
-    situation: string;
-    task: string;
-    action: string;
-    result: string;
+interface PrepInsights {
+  totalStories: number;
+  analyzedStories: number;
+  averageQuality: number;
+  topThemes: Array<{ theme: string; count: number; avgRating: number }>;
+  gapAreas: string[];
+  recommendations: string[];
+  readinessScore: number;
+}
+
+export function InterviewPrepInsights() {
+  const { user } = useAuth();
+  const [insights, setInsights] = useState<PrepInsights | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      generateInsights();
+    }
+  }, [user]);
+
+  const generateInsights = async () => {
+    try {
+      // Fetch user's stories
+      const { data: stories, error: storiesError } = await supabase
+        .from('interview_stories')
+        .select('*')
+        .eq('user_id', user?.id);
+
+      if (storiesError) throw storiesError;
+
+      // Fetch story tags for gap analysis
+      const { data: tags, error: tagsError } = await supabase
+        .from('story_tags')
+        .select('*, story:interview_stories!inner(user_id)')
+        .eq('story.user_id', user?.id);
+
+      if (tagsError) throw tagsError;
+
+      // Calculate insights
+      const totalStories = stories?.length || 0;
+      const analyzedStories = stories?.filter(s => s.quality_score > 0).length || 0;
+      const averageQuality = analyzedStories > 0 
+        ? Math.round(stories!.filter(s => s.quality_score > 0).reduce((sum, s) => sum + s.quality_score, 0) / analyzedStories)
+        : 0;
+
+      // Theme analysis
+      const themeCount: Record<string, { count: number; totalRating: number }> = {};
+      stories?.forEach(story => {
+        if (!themeCount[story.theme]) {
+          themeCount[story.theme] = { count: 0, totalRating: 0 };
+        }
+        themeCount[story.theme].count++;
+        themeCount[story.theme].totalRating += story.star_rating || 0;
+      });
+
+      const topThemes = Object.entries(themeCount)
+        .map(([theme, data]) => ({
+          theme,
+          count: data.count,
+          avgRating: data.count > 0 ? Math.round(data.totalRating / data.count) : 0
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      // Gap analysis based on common interview themes
+      const commonThemes = [
+        'Leadership', 'Teamwork', 'Problem Solving', 'Communication', 
+        'Conflict Resolution', 'Innovation', 'Adaptability', 'Decision Making',
+        'Customer Focus', 'Time Management'
+      ];
+      
+      const userThemes = topThemes.map(t => t.theme.toLowerCase());
+      const gapAreas = commonThemes.filter(theme => 
+        !userThemes.some(userTheme => 
+          userTheme.includes(theme.toLowerCase()) || theme.toLowerCase().includes(userTheme)
+        )
+      ).slice(0, 3);
+
+      // Generate recommendations
+      const recommendations = [];
+      if (analyzedStories < totalStories) {
+        recommendations.push("Analyze more stories with AI to get better insights");
+      }
+      if (averageQuality < 70) {
+        recommendations.push("Focus on improving story structure using STAR method");
+      }
+      if (gapAreas.length > 0) {
+        recommendations.push(`Add stories about: ${gapAreas.slice(0, 2).join(', ')}`);
+      }
+      if (totalStories < 5) {
+        recommendations.push("Add more stories to have better interview coverage");
+      }
+      if (recommendations.length === 0) {
+        recommendations.push("Great job! Keep practicing and refining your stories");
+      }
+
+      // Calculate readiness score
+      const storyScore = Math.min((totalStories / 10) * 30, 30);
+      const qualityScore = (averageQuality / 100) * 40;
+      const coverageScore = Math.min(((10 - gapAreas.length) / 10) * 30, 30);
+      const readinessScore = Math.round(storyScore + qualityScore + coverageScore);
+
+      setInsights({
+        totalStories,
+        analyzedStories,
+        averageQuality,
+        topThemes,
+        gapAreas,
+        recommendations,
+        readinessScore
+      });
+    } catch (error) {
+      console.error('Error generating insights:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-}
 
-interface JobDescription {
-  id: string;
-  title: string;
-  company?: string;
-  description: string;
-  extracted_themes: string[];
-  extracted_keywords: string[];
-}
-
-interface InterviewPrepInsightsProps {
-  jobDescription: JobDescription;
-  matches: StoryMatch[];
-  onViewStory?: (storyId: string) => void;
-}
-
-export const InterviewPrepInsights: React.FC<InterviewPrepInsightsProps> = ({
-  jobDescription,
-  matches,
-  onViewStory
-}) => {
-  const recommendedMatches = matches.filter(m => m.is_recommended);
-  const topMatches = matches
-    .sort((a, b) => b.match_score - a.match_score)
-    .slice(0, 3);
-
-  // Generate interview prep recommendations
-  const themes = Array.isArray(jobDescription.extracted_themes) 
-    ? jobDescription.extracted_themes 
-    : [];
-
-  const getThemeAdvice = (theme: string) => {
-    const advice = {
-      'Leading Change': 'Focus on transformation stories where you drove significant organizational or process changes.',
-      'Handling Conflict or Resistance': 'Prepare stories about difficult conversations, managing pushback, or resolving team conflicts.',
-      'Simplifying the Complex': 'Think of times you made complex ideas accessible to different audiences or stakeholders.',
-      'Influencing Stakeholders': 'Highlight stories where you gained buy-in without direct authority or convinced resistant stakeholders.',
-      'Failing and Recovering': 'Choose failure stories with strong learning outcomes and how you applied those lessons.',
-      'Driving Innovation': 'Focus on creative solutions, new approaches, or breakthrough improvements you initiated.',
-      'Cross-Functional Collaboration': 'Emphasize working across teams, departments, or with external partners.',
-      'Customer Impact': 'Quantify customer benefits, satisfaction improvements, or user experience enhancements.'
-    };
-    return advice[theme] || `Prepare stories that demonstrate ${theme.toLowerCase()} through specific examples.`;
+  const getReadinessColor = (score: number) => {
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
   };
+
+  const getReadinessLabel = (score: number) => {
+    if (score >= 80) return "Interview Ready";
+    if (score >= 60) return "Good Progress";
+    if (score >= 40) return "Building Foundation";
+    return "Getting Started";
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="p-6">
+              <div className="animate-pulse space-y-3">
+                <div className="w-8 h-8 bg-muted rounded-full"></div>
+                <div className="w-16 h-8 bg-muted rounded"></div>
+                <div className="w-20 h-4 bg-muted rounded"></div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!insights) {
+    return (
+      <Card className="p-8 text-center">
+        <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-foreground mb-2">No Data Available</h3>
+        <p className="text-muted-foreground">Unable to generate insights. Please try again.</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Interview Strategy Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            Interview Strategy
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <Star className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <div className="font-semibold text-blue-800">Top Stories</div>
-              <div className="text-sm text-blue-600">
-                Lead with your {topMatches.length} strongest matches
-              </div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <CheckSquare className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <div className="font-semibold text-green-800">Theme Coverage</div>
-              <div className="text-sm text-green-600">
-                {themes.length} key themes to address
-              </div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <Clock className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <div className="font-semibold text-purple-800">Prep Time</div>
-              <div className="text-sm text-purple-600">
-                ~45 mins recommended
-              </div>
-            </div>
+      {/* Header */}
+      <div className="text-center space-y-3">
+        <div className="flex items-center justify-center gap-3">
+          <div className="bg-primary/10 rounded-full p-3">
+            <Brain className="w-8 h-8 text-primary" />
           </div>
-        </CardContent>
+          <h2 className="text-3xl font-bold text-foreground">Interview Prep Insights</h2>
+        </div>
+        <p className="text-muted-foreground text-lg">
+          AI-powered analysis of your interview readiness
+        </p>
+      </div>
+
+      {/* Readiness Score */}
+      <Card className="p-6 text-center">
+        <div className="space-y-4">
+          <div className="flex items-center justify-center gap-3">
+            <Award className="w-8 h-8 text-primary" />
+            <h3 className="text-2xl font-bold text-foreground">Interview Readiness</h3>
+          </div>
+          <div className={`text-6xl font-bold ${getReadinessColor(insights.readinessScore)}`}>
+            {insights.readinessScore}%
+          </div>
+          <div className={`text-lg font-medium ${getReadinessColor(insights.readinessScore)}`}>
+            {getReadinessLabel(insights.readinessScore)}
+          </div>
+          <Progress value={insights.readinessScore} className="h-3 max-w-md mx-auto" />
+        </div>
       </Card>
 
-      {/* Top Recommended Stories */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            Your Strongest Stories
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            These stories best align with the job requirements. Practice these first.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {recommendedMatches.length === 0 ? (
-            <div className="text-center py-8">
-              <Book className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                No recommended story matches yet. Add more interview stories or re-analyze this job description.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recommendedMatches.slice(0, 3).map((match, index) => (
-                <div key={match.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="default" className="bg-green-100 text-green-800">
-                          #{index + 1} Priority
-                        </Badge>
-                        <span className="font-semibold">{match.interview_stories.theme}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {Math.round(match.match_score * 100)}% match
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {match.interview_stories.organisation}
-                      </p>
-                      <p className="text-sm line-clamp-2">
-                        {match.interview_stories.situation}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onViewStory?.(match.story_id)}
-                      className="ml-4"
-                    >
-                      Practice
-                      <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4 text-center">
+          <BookOpen className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+          <div className="text-2xl font-bold text-foreground">{insights.totalStories}</div>
+          <div className="text-sm text-muted-foreground">Total Stories</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <Brain className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+          <div className="text-2xl font-bold text-foreground">{insights.analyzedStories}</div>
+          <div className="text-sm text-muted-foreground">AI Analyzed</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
+          <div className="text-2xl font-bold text-foreground">{insights.averageQuality}%</div>
+          <div className="text-sm text-muted-foreground">Avg Quality</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <Target className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+          <div className="text-2xl font-bold text-foreground">{insights.gapAreas.length}</div>
+          <div className="text-sm text-muted-foreground">Gap Areas</div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Themes */}
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Your Story Themes</h3>
+          </div>
+          <div className="space-y-3">
+            {insights.topThemes.map((theme, index) => (
+              <div key={theme.theme} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 text-primary rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="font-medium text-foreground">{theme.theme}</div>
+                    <div className="text-sm text-muted-foreground">{theme.count} stories</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Theme-Based Preparation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-primary" />
-            Theme-Based Prep Guide
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Specific advice for each key theme identified in this role.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {themes.length === 0 ? (
-            <p className="text-muted-foreground">
-              No themes extracted yet. Re-analyze the job description to get personalized advice.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {themes.map((theme, index) => (
-                <div key={index} className="border-l-4 border-primary pl-4">
-                  <h4 className="font-semibold text-foreground mb-2">{theme}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {getThemeAdvice(theme)}
-                  </p>
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-4 w-4 ${
+                        i < theme.avgRating ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Gap Areas & Recommendations */}
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Recommendations</h3>
+          </div>
+          
+          {insights.gapAreas.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-medium text-foreground">Missing Themes:</h4>
+              <div className="flex flex-wrap gap-2">
+                {insights.gapAreas.map((gap) => (
+                  <Badge key={gap} variant="outline" className="text-orange-600 border-orange-600">
+                    {gap}
+                  </Badge>
+                ))}
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Interview Preparation Checklist */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckSquare className="w-5 h-5 text-primary" />
-            Pre-Interview Checklist
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">Review and practice your top 3 recommended stories</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">Prepare specific examples for each key theme</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">Research the company culture and recent news</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">Prepare thoughtful questions about the role and team</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">Practice your stories out loud with STAR method</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">Review any technical requirements or case study prep</span>
-            </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-foreground">Action Items:</h4>
+            {insights.recommendations.map((rec, index) => (
+              <div key={index} className="flex items-start gap-2 text-sm">
+                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">{rec}</span>
+              </div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
 
-      {/* Quick Tips */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            Interview Tips
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-semibold mb-2 text-foreground">During the Interview</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Use the STAR method for behavioral questions</li>
-                <li>• Quantify your impact with specific metrics</li>
-                <li>• Connect your stories to their challenges</li>
-                <li>• Ask clarifying questions if needed</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2 text-foreground">Story Selection</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Choose recent examples (within 2-3 years)</li>
-                <li>• Vary your examples across different contexts</li>
-                <li>• Prepare backup stories for follow-up questions</li>
-                <li>• Practice transitions between story components</li>
-              </ul>
-            </div>
+      {/* Next Steps */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Target className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">Next Steps</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-muted/30 rounded-lg">
+            <BookOpen className="w-8 h-8 text-primary mx-auto mb-2" />
+            <h4 className="font-medium text-foreground mb-1">Add More Stories</h4>
+            <p className="text-sm text-muted-foreground">Build a comprehensive library of examples</p>
           </div>
-        </CardContent>
+          <div className="text-center p-4 bg-muted/30 rounded-lg">
+            <Brain className="w-8 h-8 text-primary mx-auto mb-2" />
+            <h4 className="font-medium text-foreground mb-1">Analyze with AI</h4>
+            <p className="text-sm text-muted-foreground">Get detailed feedback and improvements</p>
+          </div>
+          <div className="text-center p-4 bg-muted/30 rounded-lg">
+            <Target className="w-8 h-8 text-primary mx-auto mb-2" />
+            <h4 className="font-medium text-foreground mb-1">Practice & Refine</h4>
+            <p className="text-sm text-muted-foreground">Use flashcards and mock interviews</p>
+          </div>
+        </div>
       </Card>
     </div>
   );
-};
+}
