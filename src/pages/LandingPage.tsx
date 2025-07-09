@@ -53,7 +53,7 @@ const LandingPage = () => {
                 </Button>
               </Link>
               <Link to="/interview-prep">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                <Button size="lg" variant="secondary" className="bg-white/20 text-white border-white/30 hover:bg-white/30">
                   <Briefcase className="w-5 h-5 mr-2" />
                   Analyze Job Description
                 </Button>
@@ -237,7 +237,7 @@ const LandingPage = () => {
                 </Button>
               </Link>
               <Link to="/interview-prep">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                <Button size="lg" variant="secondary" className="bg-white/20 text-white border-white/30 hover:bg-white/30">
                   <Briefcase className="w-5 h-5 mr-2" />
                   Analyze a Job Description
                 </Button>
