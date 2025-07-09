@@ -87,7 +87,11 @@ export default function StoryOptimizationPage() {
   // Load optimized story from session storage on mount
   useEffect(() => {
     if (id) {
-      const savedOptimized = sessionStorage.getItem(`optimized_story_${id}`);
+      const storageKey = `optimized_story_${id}`;
+      console.log('Checking storage for key:', storageKey);
+      const savedOptimized = sessionStorage.getItem(storageKey);
+      console.log('Found in storage:', savedOptimized ? 'YES' : 'NO');
+      
       if (savedOptimized) {
         try {
           const parsed = JSON.parse(savedOptimized);
@@ -96,11 +100,16 @@ export default function StoryOptimizationPage() {
           setActiveTab('optimized');
         } catch (e) {
           console.warn('Failed to parse saved optimized story:', e);
-          sessionStorage.removeItem(`optimized_story_${id}`);
+          sessionStorage.removeItem(storageKey);
         }
       }
     }
   }, [id]);
+
+  // Debug effect to monitor optimizedStory state changes
+  useEffect(() => {
+    console.log('OptimizedStory state changed:', optimizedStory ? 'HAS DATA' : 'NULL');
+  }, [optimizedStory]);
 
   useEffect(() => {
     loadAllStories();
@@ -113,6 +122,26 @@ export default function StoryOptimizationPage() {
         setCurrentIndex(index);
         setStory(allStories[index]);
         console.log('Story loaded:', allStories[index]);
+        
+        // Check if we have optimized data for this specific story
+        const storageKey = `optimized_story_${id}`;
+        const savedOptimized = sessionStorage.getItem(storageKey);
+        if (savedOptimized && !optimizedStory) {
+          try {
+            const parsed = JSON.parse(savedOptimized);
+            console.log('Restoring optimized story on story change:', parsed);
+            setOptimizedStory(parsed);
+            setActiveTab('optimized');
+          } catch (e) {
+            console.warn('Failed to restore optimized story on story change:', e);
+            sessionStorage.removeItem(storageKey);
+          }
+        } else if (!savedOptimized && optimizedStory) {
+          // Clear optimized story if switching to a story without optimization
+          console.log('Clearing optimized story - no data for this story');
+          setOptimizedStory(null);
+          setActiveTab('current');
+        }
       }
     }
   }, [id, allStories]);
