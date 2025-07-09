@@ -688,6 +688,19 @@ function QuickSuggestions({ storyId, onApplied }: { storyId: string; onApplied: 
   const [applying, setApplying] = useState(false);
   const { toast } = useToast();
 
+  // Debug logging
+  console.log('QuickSuggestions Debug:', {
+    storyId,
+    loading,
+    suggestionsCount: suggestions.length,
+    suggestions: suggestions.map(s => ({
+      id: s.id,
+      status: s.status,
+      impact_level: s.impact_level,
+      section: s.section
+    }))
+  });
+
   const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
   const highImpactSuggestions = pendingSuggestions.filter(s => s.impact_level === 'high');
 
