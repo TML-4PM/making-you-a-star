@@ -1265,6 +1265,39 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          updated_at: string
+          usage_location: string
+          user_id: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          updated_at?: string
+          usage_location?: string
+          user_id?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          updated_at?: string
+          usage_location?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       insurance_policies: {
         Row: {
           coverage_amount: number
