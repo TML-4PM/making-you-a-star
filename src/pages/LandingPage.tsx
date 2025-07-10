@@ -2,9 +2,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import heroImage from '@/assets/hero-star-image.jpg';
-import { useHeroImage } from '@/hooks/useHeroImage';
-import { HeroImageUpload } from '@/components/HeroImageUpload';
 import { 
   Star, 
   Sparkles, 
@@ -20,38 +17,18 @@ import {
 } from 'lucide-react';
 
 const LandingPage = () => {
-  const { heroImage: dynamicHeroImage, isLoading } = useHeroImage();
-  
-  // Use dynamic image if available, fallback to static image
-  const currentHeroImage = dynamicHeroImage?.image_url || heroImage;
-  const currentAltText = dynamicHeroImage?.alt_text || "STAR Method Interview Preparation";
+  const heroImageUrl = "https://lzfgigiyqpuuxslsygjt.supabase.co/storage/v1/object/public/images/Screenshot%202025-07-11%20at%209.07.28%20am.png";
   
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Image Management - Show only in development */}
-      {import.meta.env.DEV && (
-        <div className="fixed top-4 right-4 z-50 w-80">
-          <HeroImageUpload />
-        </div>
-      )}
-      
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-primary">
         <div className="absolute inset-0">
-          {!isLoading && (
-            <img 
-              src={currentHeroImage} 
-              alt={currentAltText} 
-              className="w-full h-full object-cover opacity-20"
-              onError={(e) => {
-                // Fallback to static image if dynamic image fails to load
-                const target = e.target as HTMLImageElement;
-                if (target.src !== heroImage) {
-                  target.src = heroImage;
-                }
-              }}
-            />
-          )}
+          <img 
+            src={heroImageUrl} 
+            alt="Make me a STAR hero image" 
+            className="w-full h-full object-cover opacity-20"
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary/60"></div>
         </div>
         <div className="relative max-w-6xl mx-auto px-6 py-24">
