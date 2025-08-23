@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, LayoutGrid, List, Search, Settings } from 'lucide-react';
+import { Plus, Search, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CompactCard } from "@/components/CompactCard";
@@ -10,7 +10,6 @@ import { TableView } from "@/components/TableView";
 import { ViewToggle } from "@/components/ViewToggle";
 import { StoryPagination } from "@/components/StoryPagination";
 import { StoryManagement } from "@/components/StoryManagement";
-import { FilterState } from "@/components/StoryFilters";
 import { supabase } from "@/integrations/supabase/client";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { 
@@ -18,11 +17,9 @@ import {
   Users, 
   Target, 
   Activity, 
-  Award, 
-  Lightbulb,
-  TrendingUp,
+  Code,
   ShoppingCart,
-  Code
+  TrendingUp
 } from 'lucide-react';
 
 const StoriesPage = () => {
