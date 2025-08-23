@@ -13,7 +13,6 @@ import {
   BarChart3,
   Target
 } from "lucide-react";
-import { UserMenu } from "./UserMenu";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -59,9 +58,6 @@ export function AppNavigation() {
                 );
               })}
             </div>
-          </div>
-          <div className="flex items-center">
-            <UserMenu />
           </div>
           <div className="flex sm:hidden">
             <div className="space-y-1 px-4 pb-3 pt-2">

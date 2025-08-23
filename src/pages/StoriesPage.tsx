@@ -12,7 +12,6 @@ import { StoryPagination } from "@/components/StoryPagination";
 import { StoryManagement } from "@/components/StoryManagement";
 import { FilterState } from "@/components/StoryFilters";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { 
   Building, 
@@ -26,11 +25,10 @@ import {
   Code
 } from 'lucide-react';
 
-export const StoriesPage = () => {
-  const { user } = useAuth();
-  const { bookmarked, toggleBookmark } = useBookmarks();
+const StoriesPage = () => {
+  const { bookmarks, toggleBookmark } = useBookmarks();
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'compact' | 'table'>('compact');
+  const [viewMode, setViewMode] = useState<'cards' | 'compact' | 'table'>('compact');
   const [expandedStories, setExpandedStories] = useState<Set<number>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [showManagement, setShowManagement] = useState(false);
@@ -38,7 +36,7 @@ export const StoriesPage = () => {
 
   // Fetch stories with tags
   const { data: stories = [], isLoading, refetch } = useQuery({
-    queryKey: ['interview_stories', user?.id],
+    queryKey: ['interview_stories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('interview_stories')
@@ -197,14 +195,14 @@ export const StoriesPage = () => {
             />
           </div>
           
-          <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+          <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
         </div>
 
         {/* Stories Display */}
         {viewMode === 'table' ? (
           <TableView
             data={paginatedStories}
-            bookmarked={bookmarked}
+            bookmarked={bookmarks}
             onToggleBookmark={handleToggleBookmark}
             getThemeIcon={getThemeIcon}
             getFramingColor={getFramingColor}
@@ -217,7 +215,7 @@ export const StoriesPage = () => {
                 item={story}
                 index={index}
                 isExpanded={expandedStories.has(index)}
-                isBookmarked={story.id ? bookmarked.has(story.id) : false}
+                isBookmarked={story.id ? bookmarks.has(story.id) : false}
                 onToggleExpanded={() => handleToggleExpanded(index)}
                 onToggleBookmark={() => handleToggleBookmark(index)}
                 getThemeIcon={getThemeIcon}
@@ -242,3 +240,5 @@ export const StoriesPage = () => {
     </div>
   );
 };
+
+export default StoriesPage;
