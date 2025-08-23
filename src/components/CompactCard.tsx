@@ -1,6 +1,8 @@
+
 import React from 'react';
-import { Building, Bookmark, BookmarkCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building, Bookmark, BookmarkCheck, ChevronDown, ChevronUp, Calendar, Star, ExternalLink } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface CompactCardProps {
   item: any;
@@ -28,27 +30,97 @@ export const CompactCard: React.FC<CompactCardProps> = ({
   children,
 }) => {
   return (
-    <div className={`bg-card rounded-lg border transition-all duration-300 hover:shadow-medium ${getFramingBg(item.Framing)}`}>
+    <div className={`bg-card rounded-lg border transition-all duration-300 hover:shadow-medium ${getFramingBg(item.framing)}`}>
       <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {getThemeIcon(item.Theme)}
-              <span className="font-medium text-foreground text-sm">{item.Theme}</span>
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {/* Left side - Icon and main content */}
+            <div className="flex-shrink-0 mt-1">
+              {getThemeIcon(item.theme)}
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Building className="w-3 h-3 text-muted-foreground" />
-              <span className="text-muted-foreground text-sm">{item.Organisation}</span>
+            
+            <div className="flex-1 min-w-0 space-y-2">
+              {/* Header row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {item.star_l_id && (
+                  <Badge variant="outline" className="text-xs font-mono">
+                    {item.star_l_id}
+                  </Badge>
+                )}
+                <span className="font-medium text-foreground text-sm">
+                  {item.role || item.theme}
+                </span>
+                <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                  <Building className="w-3 h-3" />
+                  <span>{item.organisation}</span>
+                </div>
+                {item.year && (
+                  <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                    <Calendar className="w-3 h-3" />
+                    <span>{item.year}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Second row - Framing and tags */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${getFramingColor(item.framing)}`}>
+                  {item.framing}
+                </div>
+                {item.tier && (
+                  <Badge variant="secondary" className="text-xs">
+                    Tier {item.tier}
+                  </Badge>
+                )}
+                {item.score !== null && item.score !== undefined && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Star className="w-3 h-3" />
+                    <span>{item.score}</span>
+                  </div>
+                )}
+                {item.tags && item.tags.length > 0 && (
+                  <div className="flex gap-1 flex-wrap">
+                    {item.tags.slice(0, 3).map((tag: any, idx: number) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {tag.tag}
+                      </Badge>
+                    ))}
+                    {item.tags.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{item.tags.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Third row - Situation */}
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {item.situation}
+              </p>
             </div>
-            <div className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${getFramingColor(item.Framing)}`}>
-              {item.Framing}
-            </div>
-            <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
-              {item.Situation}
-            </p>
           </div>
           
-          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+          {/* Right side - Actions */}
+          <div className="flex items-start gap-1 flex-shrink-0 ml-2">
+            {item.external_docs_url && (
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <a 
+                  href={item.external_docs_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  title="View project docs"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </Button>
+            )}
+            
             <Button
               onClick={onToggleBookmark}
               variant={isBookmarked ? "bookmark-active" : "bookmark"}
