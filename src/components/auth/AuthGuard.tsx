@@ -11,6 +11,9 @@ interface AuthGuardProps {
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { user, loading } = useAuth();
 
+  // Skip authentication in development mode
+  const isDevelopment = import.meta.env.DEV;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -19,7 +22,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     );
   }
 
-  if (!user) {
+  if (!user && !isDevelopment) {
     return <AuthForm />;
   }
 

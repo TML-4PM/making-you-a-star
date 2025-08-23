@@ -20,7 +20,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // In development mode, use a mock user
+    if (import.meta.env.DEV) {
+      const mockUser = {
+        id: '12345678-1234-5678-9abc-123456789012',
+        email: 'dev@example.com',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_metadata: {},
+        app_metadata: {},
+        aud: 'authenticated',
+        role: 'authenticated'
+      } as User;
+
+      const mockSession = {
+        access_token: 'mock-token',
+        refresh_token: 'mock-refresh',
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: mockUser,
+        expires_at: Date.now() + 3600000
+      } as Session;
+
+      setUser(mockUser);
+      setSession(mockSession);
+      setLoading(false);
+      return;
+    }
+
+    // Production authentication flow - Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
