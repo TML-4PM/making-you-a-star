@@ -9,9 +9,10 @@ import { Import, Calculator, Filter } from 'lucide-react';
 interface StoryManagementProps {
   stories: any[];
   onRefresh: () => void;
+  onImportComplete?: (stats: {imported: number; updated: number}) => void;
 }
 
-export const StoryManagement: React.FC<StoryManagementProps> = ({ stories, onRefresh }) => {
+export const StoryManagement: React.FC<StoryManagementProps> = ({ stories, onRefresh, onImportComplete }) => {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     tier: '',
@@ -58,7 +59,7 @@ export const StoryManagement: React.FC<StoryManagementProps> = ({ stories, onRef
         </TabsContent>
 
         <TabsContent value="import" className="space-y-4">
-          <StoryImport />
+          <StoryImport onImportComplete={onImportComplete} />
         </TabsContent>
       </Tabs>
     </div>

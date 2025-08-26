@@ -25,7 +25,7 @@ export const ExpandedContent: React.FC<ExpandedContentProps> = ({ item }) => {
               Situation
             </h4>
             <p className="text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg text-sm">
-              {item.Situation}
+              {item.situation || item.Situation}
             </p>
           </div>
         </TabsContent>
@@ -37,7 +37,7 @@ export const ExpandedContent: React.FC<ExpandedContentProps> = ({ item }) => {
               Task
             </h4>
             <p className="text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg text-sm">
-              {item.Task}
+              {item.task || item.Task}
             </p>
           </div>
         </TabsContent>
@@ -49,7 +49,7 @@ export const ExpandedContent: React.FC<ExpandedContentProps> = ({ item }) => {
               Action
             </h4>
             <p className="text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg text-sm">
-              {item.Action}
+              {item.action || item.Action}
             </p>
           </div>
         </TabsContent>
@@ -61,7 +61,7 @@ export const ExpandedContent: React.FC<ExpandedContentProps> = ({ item }) => {
               Result
             </h4>
             <p className="text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg text-sm">
-              {item.Result}
+              {item.result || item.Result}
             </p>
           </div>
         </TabsContent>
@@ -73,7 +73,7 @@ export const ExpandedContent: React.FC<ExpandedContentProps> = ({ item }) => {
               Lesson
             </h4>
             <p className="text-muted-foreground leading-relaxed italic bg-accent-light p-3 rounded-lg border-l-4 border-accent text-sm">
-              {item.Lesson}
+              {item.lesson || item.Lesson}
             </p>
           </div>
         </TabsContent>

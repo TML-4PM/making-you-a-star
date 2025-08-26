@@ -10,6 +10,7 @@ import { TableView } from "@/components/TableView";
 import { ViewToggle } from "@/components/ViewToggle";
 import { StoryPagination } from "@/components/StoryPagination";
 import { StoryManagement } from "@/components/StoryManagement";
+import { StoryStats } from "@/components/StoryStats";
 import { supabase } from "@/integrations/supabase/client";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { 
@@ -29,6 +30,7 @@ const StoriesPage = () => {
   const [expandedStories, setExpandedStories] = useState<Set<number>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [showManagement, setShowManagement] = useState(false);
+  const [lastImportStats, setLastImportStats] = useState<{imported: number; updated: number} | null>(null);
   const itemsPerPage = 10;
 
   // Fetch stories with tags
@@ -175,9 +177,16 @@ const StoriesPage = () => {
           </div>
         </div>
 
+        {/* Stats Bar */}
+        <StoryStats stories={stories} lastImportStats={lastImportStats} />
+
         {/* Management Tools */}
         {showManagement && (
-          <StoryManagement stories={stories} onRefresh={refetch} />
+          <StoryManagement 
+            stories={stories} 
+            onRefresh={refetch}
+            onImportComplete={(stats) => setLastImportStats(stats)}
+          />
         )}
 
         {/* Search and View Controls */}
