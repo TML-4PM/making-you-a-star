@@ -59,6 +59,11 @@ const LandingPage = () => {
                   Analyze Job Description
                 </Button>
               </Link>
+              <Link to="/embed-instructions">
+                <Button size="lg" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20">
+                  Embed Tool
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

@@ -17,35 +17,54 @@ import { GroupsPage } from "./pages/GroupsPage";
 import JobDescriptionsPage from "./pages/JobDescriptionsPage";
 import JobAnalysisPage from "./pages/JobAnalysisPage";
 import InterviewPrepPage from "./pages/InterviewPrepPage";
+import EmbedInterviewPrepPage from "./pages/EmbedInterviewPrepPage";
+import EmbedInstructionsPage from "./pages/EmbedInstructionsPage";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <div className="min-h-screen w-full">
-          <AppNavigation />
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/stories" element={<StoriesPage />} />
-            <Route path="/stories/:id/optimize" element={<StoryOptimizationPage />} />
-            <Route path="/study" element={<StudyPage />} />
-            <Route path="/practice" element={<PracticePage />} />
-            <Route path="/bookmarks" element={<BookmarksPage />} />
-            <Route path="/upload" element={<UploadPage />} />
-            <Route path="/groups" element={<GroupsPage />} />
-            <Route path="/interview-prep" element={<InterviewPrepPage />} />
-            <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
-            <Route path="/job-descriptions/:id" element={<JobAnalysisPage />} />
-            <Route path="*" element={<NotFound />} />
+            {/* Embed routes - no navigation */}
+            <Route path="/embed/*" element={
+              <div className="min-h-screen w-full">
+                <Routes>
+                  <Route path="interview-prep" element={<EmbedInterviewPrepPage />} />
+                </Routes>
+              </div>
+            } />
+            
+            {/* Regular routes - with navigation */}
+            <Route path="*" element={
+              <div className="min-h-screen w-full">
+                <AppNavigation />
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/stories" element={<StoriesPage />} />
+                  <Route path="/stories/:id/optimize" element={<StoryOptimizationPage />} />
+                  <Route path="/study" element={<StudyPage />} />
+                  <Route path="/practice" element={<PracticePage />} />
+                  <Route path="/bookmarks" element={<BookmarksPage />} />
+                  <Route path="/upload" element={<UploadPage />} />
+                  <Route path="/groups" element={<GroupsPage />} />
+                  <Route path="/interview-prep" element={<InterviewPrepPage />} />
+                  <Route path="/embed-instructions" element={<EmbedInstructionsPage />} />
+                  <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
+                  <Route path="/job-descriptions/:id" element={<JobAnalysisPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            } />
           </Routes>
-        </div>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
