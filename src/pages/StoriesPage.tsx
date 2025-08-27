@@ -1,9 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Settings } from 'lucide-react';
+import { Plus, Search, Settings, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompactCard } from "@/components/CompactCard";
 import { ExpandedContent } from "@/components/ExpandedContent";
 import { TableView } from "@/components/TableView";
@@ -142,6 +142,65 @@ const StoriesPage = () => {
                 <div key={i} className="h-20 bg-muted rounded"></div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state with prominent import CTA when no stories
+  if (stories.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
+        <div className="container mx-auto max-w-2xl">
+          <div className="text-center space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold text-foreground mb-2">
+                Interview Stories
+              </h1>
+              <p className="text-muted-foreground">
+                Build your STAR-L story database for interview success
+              </p>
+            </div>
+            
+            <Card className="border-dashed border-2 border-muted-foreground/25">
+              <CardHeader className="text-center pb-4">
+                <div className="flex justify-center mb-4">
+                  <div className="p-4 bg-primary/10 rounded-full">
+                    <Upload className="w-8 h-8 text-primary" />
+                  </div>
+                </div>
+                <CardTitle>Get Started with 60 Example Stories</CardTitle>
+                <CardDescription>
+                  Import our curated collection of STAR-L examples to jump-start your interview preparation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button 
+                  onClick={() => setShowManagement(true)}
+                  size="lg" 
+                  className="w-full"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Load 60 Enriched Examples
+                </Button>
+                <p className="text-sm text-muted-foreground text-center">
+                  Or create your own stories from scratch
+                </p>
+                <Button variant="outline" className="w-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Story
+                </Button>
+              </CardContent>
+            </Card>
+
+            {showManagement && (
+              <StoryManagement 
+                stories={stories} 
+                onRefresh={refetch}
+                onImportComplete={(stats) => setLastImportStats(stats)}
+              />
+            )}
           </div>
         </div>
       </div>
