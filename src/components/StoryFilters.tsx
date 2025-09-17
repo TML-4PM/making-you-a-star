@@ -48,8 +48,8 @@ export const StoryFilters: React.FC<StoryFiltersProps> = ({
   const clearFilters = () => {
     onFiltersChange({
       search: '',
-      tier: '',
-      role: '',
+      tier: 'all',
+      role: 'all',
       tags: [],
       yearFrom: '',
       yearTo: '',
@@ -104,7 +104,7 @@ export const StoryFilters: React.FC<StoryFiltersProps> = ({
                   <SelectValue placeholder="All roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All roles</SelectItem>
+                  <SelectItem value="all">All roles</SelectItem>
                   {availableRoles.map(role => (
                     <SelectItem key={role} value={role}>{role}</SelectItem>
                   ))}
@@ -119,7 +119,7 @@ export const StoryFilters: React.FC<StoryFiltersProps> = ({
                   <SelectValue placeholder="All tiers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All tiers</SelectItem>
+                  <SelectItem value="all">All tiers</SelectItem>
                   <SelectItem value="1">Tier 1</SelectItem>
                   <SelectItem value="2">Tier 2</SelectItem>
                   <SelectItem value="3">Tier 3</SelectItem>

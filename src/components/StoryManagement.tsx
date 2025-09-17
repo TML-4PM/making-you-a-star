@@ -15,8 +15,8 @@ interface StoryManagementProps {
 export const StoryManagement: React.FC<StoryManagementProps> = ({ stories, onRefresh, onImportComplete }) => {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
-    tier: '',
-    role: '',
+    tier: 'all',
+    role: 'all',
     tags: [],
     yearFrom: '',
     yearTo: '',
