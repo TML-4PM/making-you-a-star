@@ -975,6 +975,202 @@ export type Database = {
           },
         ]
       }
+      blog_article_likes: {
+        Row: {
+          article_id: string | null
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_article_likes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_article_views: {
+        Row: {
+          article_id: string | null
+          id: string
+          ip_address: unknown | null
+          referrer: string | null
+          user_agent: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_article_views_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_articles: {
+        Row: {
+          author_avatar_url: string | null
+          author_id: string | null
+          author_name: string
+          category: string | null
+          comment_count: number | null
+          content: string | null
+          content_type: string
+          cover_image_url: string | null
+          created_at: string | null
+          excerpt: string | null
+          external_url: string | null
+          featured: boolean | null
+          id: string
+          like_count: number | null
+          published_at: string | null
+          reading_time_minutes: number | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          source: string | null
+          source_metadata: Json | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          video_embed_id: string | null
+          video_platform: string | null
+          video_url: string | null
+          view_count: number | null
+        }
+        Insert: {
+          author_avatar_url?: string | null
+          author_id?: string | null
+          author_name: string
+          category?: string | null
+          comment_count?: number | null
+          content?: string | null
+          content_type?: string
+          cover_image_url?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          external_url?: string | null
+          featured?: boolean | null
+          id?: string
+          like_count?: number | null
+          published_at?: string | null
+          reading_time_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          source?: string | null
+          source_metadata?: Json | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          video_embed_id?: string | null
+          video_platform?: string | null
+          video_url?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          author_avatar_url?: string | null
+          author_id?: string | null
+          author_name?: string
+          category?: string | null
+          comment_count?: number | null
+          content?: string | null
+          content_type?: string
+          cover_image_url?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          external_url?: string | null
+          featured?: boolean | null
+          id?: string
+          like_count?: number | null
+          published_at?: string | null
+          reading_time_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          source?: string | null
+          source_metadata?: Json | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          video_embed_id?: string | null
+          video_platform?: string | null
+          video_url?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      blog_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       "Book → Chapter (cluster) → Sub-components - %.csv": {
         Row: {
           book: string | null
