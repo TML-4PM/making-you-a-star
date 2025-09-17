@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,17 +98,14 @@ export const StoryImport: React.FC<StoryImportProps> = ({ onImportComplete }) =>
     const rows = lines.slice(1);
     return rows.map(row => {
       const values = parseCSVRow(row);
-      const story: any = {};
-      
+      const rowData: any = {};
       headers.forEach((header, index) => {
-        story[header] = values[index] || '';
+        rowData[header] = values[index] || '';
       });
-      
-      return story;
+      return rowData;
     });
   };
 
-  // Quote-aware CSV parser that handles commas inside quoted fields
   const parseCSVRow = (row: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -119,7 +115,6 @@ export const StoryImport: React.FC<StoryImportProps> = ({ onImportComplete }) =>
       const char = row[i];
       
       if (char === '"') {
-        // Handle escaped quotes ("")
         if (inQuotes && row[i + 1] === '"') {
           current += '"';
           i++; // Skip next quote
@@ -139,183 +134,148 @@ export const StoryImport: React.FC<StoryImportProps> = ({ onImportComplete }) =>
   };
 
   const mapCSVToStory = (csvRow: any) => {
-    // Extract year from ranges like "2019–2021" or single years
-    const parseYear = (yearStr: string): number | null => {
-      if (!yearStr) return null;
-      const match = yearStr.match(/(\d{4})/);
-      return match ? parseInt(match[1]) : null;
+    // Parse tags from semicolon-separated string
+    let tags: string[] = [];
+    if (csvRow.Tags && csvRow.Tags.trim()) {
+      tags = csvRow.Tags.split(';').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0);
+    }
+
+    return {
+      user_id: user?.id || null,
+      star_l_id: csvRow['STAR-L ID'] || null,
+      theme: `${csvRow.Role} at ${csvRow.Company}` || csvRow.Role || 'Untitled Story',
+      organisation: csvRow.Company || 'Unknown Company',
+      role: csvRow.Role || null,
+      year: csvRow.Year ? parseInt(csvRow.Year) : null,
+      situation: csvRow.Situation || 'Not specified',
+      task: csvRow.Task || 'Not specified',
+      action: csvRow.Action || 'Not specified',
+      result: csvRow.Result || 'Not specified',
+      lesson: csvRow.Learning || csvRow.Lesson || 'Not specified',
+      framing: 'STAR-L',
+      tier: csvRow.Tier ? parseInt(csvRow.Tier) : null,
+      external_docs_url: csvRow['Link to Project Docs'] || null,
+      score: csvRow.Score ? parseInt(csvRow.Score) : null,
+      tags: tags
+    };
+  };
+
+  const handleImportWithData = async (dataToImport: string) => {
+    const parsedData = parseCSV(dataToImport);
+    if (parsedData.length === 0) {
+      throw new Error("No valid data found");
+    }
+
+    const stats: ImportStats = {
+      imported: 0,
+      updated: 0,
+      errors: []
     };
 
-    // Parse numeric fields safely
-    const parseNumber = (str: string): number | null => {
-      if (!str || str.trim() === '') return null;
-      const num = parseInt(str.trim());
-      return isNaN(num) ? null : num;
-    };
+    for (const row of parsedData) {
+      try {
+        const storyData = mapCSVToStory(row);
+        
+        if (!storyData.situation && !storyData.task && !storyData.action && !storyData.result) {
+          stats.errors.push(`Skipping empty story: ${storyData.star_l_id || 'Unknown'}`);
+          continue;
+        }
 
-    // Map CSV fields to database fields
-    const story = {
-      star_l_id: csvRow['STAR-L ID']?.trim() || null,
-      role: csvRow['Role']?.trim() || null,
-      organisation: csvRow['Company']?.trim() || null,
-      year: parseYear(csvRow['Year']),
-      situation: csvRow['Situation']?.trim() || null,
-      task: csvRow['Task']?.trim() || null,
-      action: csvRow['Action']?.trim() || null,
-      result: csvRow['Result']?.trim() || null,
-      lesson: csvRow['Learning']?.trim() || null,
-      tier: parseNumber(csvRow['Tier']) || 1,
-      external_docs_url: csvRow['Link to Project Docs']?.trim() || null,
-      score: parseNumber(csvRow['Score']),
-      theme: csvRow['Role']?.trim() || 'Professional', // Use role as theme
-      framing: 'Professional', // Default framing
-      user_id: user?.id || null
-    };
+        const { data: existingStory } = await supabase
+          .from('interview_stories')
+          .select('id')
+          .eq('star_l_id', storyData.star_l_id)
+          .single();
 
-    // Parse tags, handling semicolon-separated values
-    const tagsStr = csvRow['Tags']?.trim();
-    const tags = tagsStr ? tagsStr.split(';').map((t: string) => t.trim()).filter(Boolean) : [];
+        if (existingStory) {
+          const { error: updateError } = await supabase
+            .from('interview_stories')
+            .update(storyData)
+            .eq('id', existingStory.id);
+
+          if (updateError) throw updateError;
+          stats.updated++;
+        } else {
+          const { error: insertError } = await supabase
+            .from('interview_stories')
+            .insert([storyData]);
+
+          if (insertError) throw insertError;
+          stats.imported++;
+        }
+
+        if (storyData.tags && storyData.tags.length > 0) {
+          const { data: story } = await supabase
+            .from('interview_stories')
+            .select('id')
+            .eq('star_l_id', storyData.star_l_id)
+            .single();
+
+          if (story) {
+            const { error: deleteError } = await supabase
+              .from('story_tags')
+              .delete()
+              .eq('story_id', story.id);
+
+            if (!deleteError) {
+              const tagInserts = storyData.tags.map(tag => ({
+                story_id: story.id,
+                tag: tag.trim()
+              }));
+
+              await supabase.from('story_tags').insert(tagInserts);
+            }
+          }
+        }
+      } catch (error) {
+        stats.errors.push(`Error processing row: ${error}`);
+      }
+    }
+
+    setImportStats(stats);
+    onImportComplete?.({
+      imported: stats.imported,
+      updated: stats.updated
+    });
+
+    return stats;
+  };
+
+  const autoImportEnrichedData = async () => {
+    setCsvData(enrichedExampleData);
+    setIsImporting(true);
     
-    return { story, tags };
+    try {
+      const stats = await handleImportWithData(enrichedExampleData);
+      toast({
+        title: "Auto-Import Complete",
+        description: `Successfully imported ${stats.imported} new stories, updated ${stats.updated} existing stories`,
+      });
+    } catch (error) {
+      toast({
+        title: "Auto-Import Failed",
+        description: `Error: ${error}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleImport = async () => {
     if (!csvData.trim()) {
       toast({
-        title: "Error",
-        description: "Please paste CSV data to import",
-        variant: "destructive"
+        title: "No Data",
+        description: "Please enter CSV data to import"
       });
       return;
     }
 
     setIsImporting(true);
-    const stats: ImportStats = { imported: 0, updated: 0, errors: [] };
+    setImportStats(null);
 
     try {
-      const csvRows = parseCSV(csvData);
-      
-      for (const csvRow of csvRows) {
-        try {
-          const { story, tags } = mapCSVToStory(csvRow);
-          
-          if (!story.star_l_id) {
-            stats.errors.push(`Missing STAR-L ID for story: ${story.situation?.substring(0, 50)}...`);
-            continue;
-          }
-
-          // Upsert story - handle dev mode with null user_id
-          let query = supabase
-            .from('interview_stories')
-            .select('id')
-            .eq('star_l_id', story.star_l_id);
-          
-          if (story.user_id) {
-            query = query.eq('user_id', story.user_id);
-          } else {
-            query = query.is('user_id', null);
-          }
-          
-          const { data: existingStory, error: fetchError } = await query.maybeSingle();
-
-          if (fetchError) {
-            stats.errors.push(`Error checking existing story ${story.star_l_id}: ${fetchError.message}`);
-            continue;
-          }
-
-          let storyId: string;
-          
-          if (existingStory) {
-            // Update existing story
-            const { data: updatedStory, error: updateError } = await supabase
-              .from('interview_stories')
-              .update(story)
-              .eq('id', existingStory.id)
-              .select('id')
-              .single();
-
-            if (updateError) {
-              stats.errors.push(`Error updating story ${story.star_l_id}: ${updateError.message}`);
-              continue;
-            }
-            
-            storyId = updatedStory.id;
-            stats.updated++;
-          } else {
-            // Insert new story
-            const { data: newStory, error: insertError } = await supabase
-              .from('interview_stories')
-              .insert(story)
-              .select('id')
-              .single();
-
-            if (insertError) {
-              stats.errors.push(`Error inserting story ${story.star_l_id}: ${insertError.message}`);
-              continue;
-            }
-            
-            storyId = newStory.id;
-            stats.imported++;
-          }
-
-          // Handle tags - gracefully handle RLS failures
-          if (tags.length > 0) {
-            try {
-              // Delete existing tags for this story
-              await supabase
-                .from('story_tags')
-                .delete()
-                .eq('story_id', storyId);
-
-              // Insert new tags
-              const tagInserts = tags.map(tag => ({
-                story_id: storyId,
-                tag: tag,
-                tag_type: 'label'
-              }));
-
-              const { error: tagsError } = await supabase
-                .from('story_tags')
-                .insert(tagInserts);
-
-              if (tagsError) {
-                // Fallback: store tags in ai_suggestions as JSON
-                await supabase
-                  .from('interview_stories')
-                  .update({ 
-                    ai_suggestions: { tags: tags, _fallback_reason: 'RLS_blocked_tags' }
-                  })
-                  .eq('id', storyId);
-              }
-            } catch (tagError) {
-              // Silent fallback - tags will be stored in ai_suggestions
-              await supabase
-                .from('interview_stories')
-                .update({ 
-                  ai_suggestions: { tags: tags, _fallback_reason: 'tags_insert_failed' }
-                })
-                .eq('id', storyId);
-            }
-          }
-
-        } catch (error) {
-          stats.errors.push(`Error processing row: ${error}`);
-        }
-      }
-
-      setImportStats(stats);
-      
-      // Notify parent component
-      onImportComplete?.({
-        imported: stats.imported,
-        updated: stats.updated
-      });
-      
-      toast({
-        title: "Import Complete",
-        description: `Imported ${stats.imported} new stories, updated ${stats.updated} existing stories`,
-      });
-
+      await handleImportWithData(csvData);
     } catch (error) {
       toast({
         title: "Import Failed",
@@ -342,13 +302,23 @@ export const StoryImport: React.FC<StoryImportProps> = ({ onImportComplete }) =>
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="block text-sm font-medium">CSV Data</label>
-            <Button 
-              onClick={() => setCsvData(enrichedExampleData)}
-              variant="outline"
-              size="sm"
-            >
-              Load 60 Enriched Examples
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setCsvData(enrichedExampleData)}
+                variant="outline"
+                size="sm"
+              >
+                Load 60 Enriched Examples
+              </Button>
+              <Button 
+                onClick={autoImportEnrichedData}
+                variant="default"
+                size="sm"
+                disabled={isImporting}
+              >
+                {isImporting ? "Importing..." : "Auto-Import All 60"}
+              </Button>
+            </div>
           </div>
           <Textarea
             value={csvData}
