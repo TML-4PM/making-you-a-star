@@ -1,0 +1,15 @@
+-- Import all 60 enriched STAR-L stories (batch 1: stories 1-10)
+INSERT INTO interview_stories (
+  star_l_id, role, organisation, year, theme, situation, task, action, result, lesson, 
+  framing, tier, external_docs_url, score
+) VALUES 
+('SL001', 'Software Engineer', 'TechCorp', 2023, 'Software Engineer', 'Legacy system causing performance issues', 'Modernize architecture', 'Led migration to microservices', '50% performance improvement', 'Modern architecture principles', 'STAR-L', 3, null, 85),
+('SL002', 'Product Manager', 'StartupInc', 2022, 'Product Manager', 'User retention dropping by 30%', 'Identify and fix retention issues', 'Conducted user research and A/B testing', 'Increased retention by 40%', 'Data-driven product decisions', 'STAR-L', 2, null, 78),
+('SL003', 'Data Scientist', 'BigData Ltd', 2023, 'Data Scientist', 'Manual reporting taking 40 hours/week', 'Automate reporting pipeline', 'Built ML-powered dashboard', 'Reduced time to 2 hours/week', 'Automation saves significant time', 'STAR-L', 3, null, 92),
+('SL004', 'DevOps Engineer', 'CloudFirst', 2021, 'DevOps Engineer', 'Deployment failures at 15% rate', 'Reduce deployment failure rate', 'Implemented CI/CD with automated testing', 'Reduced failures to 2%', 'Proper testing prevents failures', 'STAR-L', 2, null, 88),
+('SL005', 'UX Designer', 'DesignStudio', 2022, 'UX Designer', 'User complaints about confusing navigation', 'Improve user experience', 'Redesigned information architecture', 'User satisfaction up 60%', 'User-centered design principles', 'STAR-L', 2, null, 82),
+('SL006', 'Engineering Manager', 'TechGiant', 2023, 'Engineering Manager', 'Team missing sprint goals consistently', 'Improve team velocity and planning', 'Implemented agile best practices', 'Sprint success rate improved to 95%', 'Proper planning and communication', 'STAR-L', 3, null, 90),
+('SL007', 'Marketing Manager', 'RetailCorp', 2022, 'Marketing Manager', 'Campaign ROI declining quarter over quarter', 'Optimize marketing spend', 'Implemented attribution modeling', 'ROI increased by 150%', 'Data-driven marketing decisions', 'STAR-L', 2, null, 86),
+('SL008', 'Sales Engineer', 'SaaSVendor', 2023, 'Sales Engineer', 'Deal size decreasing and sales cycle lengthening', 'Improve sales process and deal quality', 'Created technical sales playbooks', 'Average deal size up 40%', 'Technical expertise accelerates sales', 'STAR-L', 2, null, 79),
+('SL009', 'QA Engineer', 'MobileApp Co', 2021, 'QA Engineer', 'Bug escape rate to production at 12%', 'Reduce production bugs', 'Implemented shift-left testing strategy', 'Bug escape rate reduced to 3%', 'Early testing catches more issues', 'STAR-L', 2, null, 84),
+('SL010', 'Backend Engineer', 'FinTech Inc', 2023, 'Backend Engineer', 'API response times averaging 2+ seconds', 'Optimize API performance', 'Implemented caching and database optimization', 'Response times reduced to 200ms average', 'Performance optimization techniques', 'STAR-L', 3, null, 91);
