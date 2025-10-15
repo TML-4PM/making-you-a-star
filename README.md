@@ -40,6 +40,18 @@ A comprehensive React-based application for managing interview stories, analyzin
 - **[API Documentation](API_DOCUMENTATION.md)**: Complete API reference and usage
 - **[User Guide](USER_GUIDE.md)**: Step-by-step user manual for all features
 - **[Deployment Guide](DEPLOYMENT.md)**: Production deployment and configuration
+- **[Sitemap Guide](SITEMAP_GUIDE.md)**: SEO optimization and sitemap maintenance
+
+## 🔍 SEO & Discoverability
+
+The platform includes comprehensive SEO optimization:
+- **XML Sitemap**: `/public/sitemap.xml` with all public routes
+- **Robots.txt**: Proper crawler directives at `/public/robots.txt`
+- **Meta Tags**: Enhanced Open Graph and Twitter Card support
+- **Structured Data**: JSON-LD for WebApplication and Organization schemas
+- **Canonical URLs**: Prevent duplicate content issues
+
+See [SITEMAP_GUIDE.md](SITEMAP_GUIDE.md) for detailed SEO documentation.
 
 ## 🚦 Getting Started
 
